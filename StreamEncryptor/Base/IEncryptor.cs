@@ -21,5 +21,13 @@ namespace StreamEncryptor.Base
         /// <param name="stream">The stream to encrypt</param>
         /// <returns></returns>
         Task<T> Encrypt<T>(Stream stream) where T : Stream, new();
+
+        /// <summary>
+        /// Authenticates an encrypted stream
+        /// </summary>
+        /// <typeparam name="T">The type of stream</typeparam>
+        /// <param name="stream">An encrypted stream</param>
+        /// <returns></returns>
+        Task<bool> Authenticate<T>(T stream) where T : Stream;
     }
 }

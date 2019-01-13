@@ -105,6 +105,28 @@ namespace StreamEncryptor.Base
         #endregion
 
         /// <summary>
+        /// Authenticates an encrypted stream
+        /// </summary>
+        /// <typeparam name="T">The type of stream</typeparam>
+        /// <param name="stream">An encrypted stream</param>
+        /// <param name="seek">Whether or not to seek through the stream when authenticating</param>
+        /// <returns></returns>
+        protected virtual Task<bool> Authenticate<T>(T stream, bool seek) where T : Stream
+        {
+            CheckDisposed();
+            return Task.FromResult(false);
+        }
+
+        /// <summary>
+        /// Authenticates an encrypted stream
+        /// </summary>
+        /// <typeparam name="T">The type of stream</typeparam>
+        /// <param name="stream">An encrypted stream</param>
+        /// <returns></returns>
+        public Task<bool> Authenticate<T>(T stream) where T : Stream
+            => Authenticate(stream, true);
+
+        /// <summary>
         /// Turns a string into a cryptographically-secure byte[] array
         /// </summary>
         /// <returns>A <see cref="byte"/> array containing the derived key</returns>
