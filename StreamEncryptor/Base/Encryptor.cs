@@ -4,7 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
-namespace StreamEncryptor
+namespace StreamEncryptor.Base
 {
     public abstract class Encryptor : IEncryptor
     {

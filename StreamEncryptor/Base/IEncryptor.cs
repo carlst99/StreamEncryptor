@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace StreamEncryptor
+namespace StreamEncryptor.Base
 {
     public interface IEncryptor : IDisposable
     {
