@@ -20,6 +20,11 @@ namespace StreamEncryptor.Base
         /// </summary>
         public const int SALT_SIZE = 16;
 
+        /// <summary>
+        /// The length of any buffers created during encryption/decryption
+        /// </summary>
+        internal const int BUFFER_READ_LENGTH = 256;
+
         #endregion
 
         #region Fields
@@ -41,6 +46,10 @@ namespace StreamEncryptor.Base
 
         #endregion
 
+        /// <summary>
+        /// Provides the base implementation for an encryption-authentication encryptor service
+        /// </summary>
+        /// <param name="password">The password to use for encryption</param>
         protected Encryptor(string password)
         {
             if (string.IsNullOrEmpty(password))
@@ -52,7 +61,7 @@ namespace StreamEncryptor.Base
         #region Decrypt
 
         /// <summary>
-        /// Decrypts a stream
+        /// When overriden in a derived class, decrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to decrypt to</typeparam>
         /// <param name="stream">The stream to decrypt</param>
@@ -64,7 +73,7 @@ namespace StreamEncryptor.Base
         }
 
         /// <summary>
-        /// Decrypts a stream
+        /// When overriden in a derived class, decrypts a stream
         /// </summary>
         /// <param name="stream">The stream to decrypt</param>
         /// <returns>A <see cref="MemoryStream"/> containing the decrypted data</returns>
@@ -75,7 +84,7 @@ namespace StreamEncryptor.Base
         #region Encrypt
 
         /// <summary>
-        /// Encrypts a stream
+        /// When overriden in a derived class, encrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to encrypt to</typeparam>
         /// <param name="stream">The stream to encrypt</param>
@@ -87,7 +96,7 @@ namespace StreamEncryptor.Base
         }
 
         /// <summary>
-        /// Encrypts a stream
+        /// When overriden in a derived class, encrypts a stream
         /// </summary>
         /// <param name="stream">The stream to encrypt</param>
         /// <returns>A <see cref="MemoryStream"/> containing the encrypted data</returns>

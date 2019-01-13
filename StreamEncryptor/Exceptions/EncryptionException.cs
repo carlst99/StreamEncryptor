@@ -19,5 +19,10 @@ namespace StreamEncryptor.Exceptions
             : base(message, innerException)
         {
         }
+
+        public override string ToString()
+        {
+            return Error.ToString() + ": " + base.ToString();
+        }
     }
 }
