@@ -1,4 +1,5 @@
 ﻿using StreamEncryptor.Exceptions;
+using StreamEncryptor.Extensions;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -69,6 +70,10 @@ namespace StreamEncryptor.Base
         public virtual Task<T> Decrypt<T>(Stream stream) where T : Stream, new()
         {
             CheckDisposed();
+
+            if (stream.IsNullOrEmpty())
+                throw new ArgumentNullException("Stream cannot be null or empty");
+
             return Task.FromResult(default(T));
         }
 
@@ -92,6 +97,10 @@ namespace StreamEncryptor.Base
         public virtual Task<T> Encrypt<T>(Stream stream) where T : Stream, new()
         {
             CheckDisposed();
+
+            if (stream.IsNullOrEmpty())
+                throw new ArgumentNullException("Stream cannot be null or empty");
+
             return Task.FromResult(default(T));
         }
 
@@ -104,6 +113,8 @@ namespace StreamEncryptor.Base
 
         #endregion
 
+        #region Authentication
+
         /// <summary>
         /// Authenticates an encrypted stream
         /// </summary>
@@ -114,6 +125,10 @@ namespace StreamEncryptor.Base
         protected virtual Task<bool> Authenticate<T>(T stream, bool seek) where T : Stream
         {
             CheckDisposed();
+
+            if (stream.IsNullOrEmpty())
+                throw new ArgumentNullException("Stream cannot be null or empty");
+
             return Task.FromResult(false);
         }
 
@@ -125,6 +140,8 @@ namespace StreamEncryptor.Base
         /// <returns></returns>
         public Task<bool> Authenticate<T>(T stream) where T : Stream
             => Authenticate(stream, true);
+
+        #endregion
 
         /// <summary>
         /// Turns a string into a cryptographically-secure byte[] array

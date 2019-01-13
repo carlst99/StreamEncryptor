@@ -28,8 +28,7 @@ namespace StreamEncryptor
         /// <returns></returns>
         public override async Task<T> Decrypt<T>(Stream stream)
         {
-            if (stream.IsNullOrEmpty())
-                throw new ArgumentNullException("Stream cannot be null or empty");
+            await base.Decrypt(stream).ConfigureAwait(false);
 
             try
             {
@@ -117,8 +116,7 @@ namespace StreamEncryptor
         /// <returns>A stream of the encrypted data</returns>
         public override async Task<T> Encrypt<T>(Stream stream)
         {
-            if (stream.IsNullOrEmpty())
-                throw new ArgumentNullException("Stream cannot be null or empty");
+            await base.Encrypt(stream).ConfigureAwait(false);
 
             try
             {
