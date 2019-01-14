@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="CoverageReport\**" />
+    <EmbeddedResource Remove="CoverageReport\**" />
+    <None Remove="CoverageReport\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="coverage.xml" />
     <None Remove="getCoverage.bat" />
   </ItemGroup>
 
