@@ -185,58 +185,6 @@ namespace StreamEncryptor
         /// <param name="stream">An encrypted stream</param>
         /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
         /// <returns></returns>
-        /*internal override async Task<bool> AuthenticateAsync<T>(T stream, bool peek)
-        {
-            await base.AuthenticateAsync(stream, peek).ConfigureAwait(false);
-
-            // Get the hash and auth salt from the stream
-            byte[] hash = new byte[_authenticator.HashSize / 8];
-            byte[] authSalt = new byte[SALT_SIZE];
-            if (peek)
-            {
-                await stream.PeekAsync(hash).ConfigureAwait(false);
-                await stream.PeekAsync(authSalt, hash.LongLength).ConfigureAwait(false);
-            }
-            else
-            {
-                await stream.ReadAsync(hash, 0, hash.Length).ConfigureAwait(false);
-                await stream.ReadAsync(authSalt, 0, authSalt.Length).ConfigureAwait(false);
-            }
-
-            // Get the auth key
-            _authenticator.Key = DeriveKey(_password, authSalt);
-
-            // Determine where we need to read from
-            long actualPosition = 0;
-            if (peek)
-                actualPosition = hash.LongLength + authSalt.LongLength;
-            else
-                actualPosition = stream.Position;
-
-            // Get the buffer to authenticate
-            byte[] buffer = new byte[stream.Length - actualPosition];
-            await stream.PeekAsync(buffer, actualPosition).ConfigureAwait(false);
-
-            // Compute and check the hash
-            byte[] computedHash = _authenticator.ComputeHash(buffer);
-            bool isValid = true;
-
-            for (int i = 0; i < hash.Length; i++)
-            {
-                if (hash[i] != computedHash[i])
-                    isValid = false;
-            }
-
-            return isValid;
-        }*/
-
-        /// <summary>
-        /// Authenticates an encrypted stream
-        /// </summary>
-        /// <typeparam name="T">The type of stream</typeparam>
-        /// <param name="stream">An encrypted stream</param>
-        /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
-        /// <returns></returns>
         internal override async Task<bool> AuthenticateAsync<T>(T stream, bool peek)
         {
             await base.AuthenticateAsync(stream, peek).ConfigureAwait(false);
