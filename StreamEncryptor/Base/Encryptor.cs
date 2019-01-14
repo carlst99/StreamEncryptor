@@ -1,4 +1,5 @@
 ﻿using StreamEncryptor.Exceptions;
+using StreamEncryptor.Extensions;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -58,30 +59,21 @@ namespace StreamEncryptor.Base
             _password = password;
         }
 
-        #region Decrypt
-
         /// <summary>
         /// When overriden in a derived class, decrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to decrypt to</typeparam>
         /// <param name="stream">The stream to decrypt</param>
         /// <returns></returns>
-        public virtual Task<T> Decrypt<T>(Stream stream) where T : Stream, new()
+        public virtual Task<T> DecryptAsync<T>(Stream stream) where T : Stream, new()
         {
             CheckDisposed();
+
+            if (stream.IsNullOrEmpty())
+                throw new ArgumentNullException("Stream cannot be null or empty");
+
             return Task.FromResult(default(T));
         }
-
-        /// <summary>
-        /// When overriden in a derived class, decrypts a stream
-        /// </summary>
-        /// <param name="stream">The stream to decrypt</param>
-        /// <returns>A <see cref="MemoryStream"/> containing the decrypted data</returns>
-        public virtual Task<MemoryStream> Decrypt(Stream stream) => Decrypt<MemoryStream>(stream);
-
-        #endregion
-
-        #region Encrypt
 
         /// <summary>
         /// When overriden in a derived class, encrypts a stream
@@ -89,18 +81,43 @@ namespace StreamEncryptor.Base
         /// <typeparam name="T">The type of stream to encrypt to</typeparam>
         /// <param name="stream">The stream to encrypt</param>
         /// <returns></returns>
-        public virtual Task<T> Encrypt<T>(Stream stream) where T : Stream, new()
+        public virtual Task<T> EncryptAsync<T>(Stream stream) where T : Stream, new()
         {
             CheckDisposed();
+
+            if (stream.IsNullOrEmpty())
+                throw new ArgumentNullException("Stream cannot be null or empty");
+
             return Task.FromResult(default(T));
         }
 
+        #region Authentication
+
         /// <summary>
-        /// When overriden in a derived class, encrypts a stream
+        /// Authenticates an encrypted stream
         /// </summary>
-        /// <param name="stream">The stream to encrypt</param>
-        /// <returns>A <see cref="MemoryStream"/> containing the encrypted data</returns>
-        public virtual Task<MemoryStream> Encrypt(Stream stream) => Encrypt<MemoryStream>(stream);
+        /// <typeparam name="T">The type of stream</typeparam>
+        /// <param name="stream">An encrypted stream</param>
+        /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
+        /// <returns></returns>
+        internal virtual Task<bool> AuthenticateAsync<T>(T stream, bool peek) where T : Stream
+        {
+            CheckDisposed();
+
+            if (stream.IsNullOrEmpty())
+                throw new ArgumentNullException("Stream cannot be null or empty");
+
+            return Task.FromResult(false);
+        }
+
+        /// <summary>
+        /// Authenticates an encrypted stream
+        /// </summary>
+        /// <typeparam name="T">The type of stream</typeparam>
+        /// <param name="stream">An encrypted stream</param>
+        /// <returns></returns>
+        public Task<bool> AuthenticateAsync<T>(T stream) where T : Stream
+            => AuthenticateAsync(stream, true);
 
         #endregion
 

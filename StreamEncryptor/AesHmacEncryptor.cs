@@ -26,10 +26,9 @@ namespace StreamEncryptor
         /// <typeparam name="T">The type of stream to return the decrypted data as</typeparam>
         /// <param name="stream">The stream to decrypt</param>
         /// <returns></returns>
-        public override async Task<T> Decrypt<T>(Stream stream)
+        public override async Task<T> DecryptAsync<T>(Stream stream)
         {
-            if (stream.IsNullOrEmpty())
-                throw new ArgumentNullException("Stream cannot be null or empty");
+            await base.DecryptAsync<T>(stream).ConfigureAwait(false);
 
             try
             {
@@ -37,33 +36,12 @@ namespace StreamEncryptor
 
                 #region Authentication
 
-                byte[] hash = new byte[_authenticator.HashSize / 8];
-                await stream.ReadAsync(hash, 0, hash.Length).ConfigureAwait(false);
-
-                // Read the auth salt from the stream
-                byte[] authSalt = new byte[SALT_SIZE];
-                await stream.ReadAsync(authSalt, 0, authSalt.Length).ConfigureAwait(false);
-                // Get the authentication key
-                _authenticator.Key = DeriveKey(_password, authSalt);
-
-                // Get the remaining stream buffer
-                byte[] buffer = new byte[stream.Length - stream.Position];
-                long position = stream.Position;
-                await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                stream.Position = position;
-
-                // Calculate the hash of the encrypted data
-                byte[] computedHash = _authenticator.ComputeHash(buffer);
-
-                for (int i = 0; i < hash.Length; i++)
+                if (!await AuthenticateAsync(stream, false).ConfigureAwait(false))
                 {
-                    if (hash[i] != computedHash[i])
+                    throw new EncryptionException("Data has been modified after encryption")
                     {
-                        throw new EncryptionException("Data has been modified after encryption")
-                        {
-                            Error = EncryptionError.TamperedData
-                        };
-                    }
+                        Error = EncryptionError.TamperedData
+                    };
                 }
 
                 #endregion
@@ -99,6 +77,7 @@ namespace StreamEncryptor
 
                 #endregion
 
+                decryptedSecret.Position = 0;
                 return decryptedSecret;
             }
             catch (Exception ex)
@@ -115,10 +94,9 @@ namespace StreamEncryptor
         /// </summary>
         /// <param name="entity">The entity to be encrypted</param>
         /// <returns>A stream of the encrypted data</returns>
-        public override async Task<T> Encrypt<T>(Stream stream)
+        public override async Task<T> EncryptAsync<T>(Stream stream)
         {
-            if (stream.IsNullOrEmpty())
-                throw new ArgumentNullException("Stream cannot be null or empty");
+            await base.EncryptAsync<T>(stream).ConfigureAwait(false);
 
             try
             {
@@ -188,6 +166,7 @@ namespace StreamEncryptor
 
                 #endregion
 
+                returnStream.Position = 0;
                 return returnStream;
             }
             catch (Exception ex)
@@ -197,6 +176,51 @@ namespace StreamEncryptor
                     Error = EncryptionError.EncryptionError
                 };
             }
+        }
+
+        /// <summary>
+        /// Authenticates an encrypted stream
+        /// </summary>
+        /// <typeparam name="T">The type of stream</typeparam>
+        /// <param name="stream">An encrypted stream</param>
+        /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
+        /// <returns></returns>
+        internal override async Task<bool> AuthenticateAsync<T>(T stream, bool peek)
+        {
+            await base.AuthenticateAsync(stream, peek).ConfigureAwait(false);
+            long position = stream.Position;
+
+            // Get the hash and auth salt from the stream
+            byte[] hash = new byte[_authenticator.HashSize / 8];
+            byte[] authSalt = new byte[SALT_SIZE];
+
+            await stream.ReadAsync(hash, 0, hash.Length).ConfigureAwait(false);
+            await stream.ReadAsync(authSalt, 0, authSalt.Length).ConfigureAwait(false);
+
+            // Get the auth key
+            _authenticator.Key = DeriveKey(_password, authSalt);
+
+            // Get the buffer to authenticate
+            byte[] buffer = new byte[stream.Length - stream.Position];
+            await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+
+            // Compute and check the hash
+            byte[] computedHash = _authenticator.ComputeHash(buffer);
+            bool isValid = true;
+
+            for (int i = 0; i < hash.Length; i++)
+            {
+                if (hash[i] != computedHash[i])
+                    isValid = false;
+            }
+
+            // Return the stream position
+            if (peek)
+                stream.Position = position;
+            else
+                stream.Position = hash.LongLength + authSalt.LongLength;
+
+            return isValid;
         }
     }
 }
