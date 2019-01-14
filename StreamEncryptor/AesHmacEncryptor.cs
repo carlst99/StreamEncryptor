@@ -36,7 +36,7 @@ namespace StreamEncryptor
 
                 #region Authentication
 
-                byte[] hash = new byte[_authenticator.HashSize / 8];
+                /*byte[] hash = new byte[_authenticator.HashSize / 8];
                 await stream.ReadAsync(hash, 0, hash.Length).ConfigureAwait(false);
 
                 // Read the auth salt from the stream
@@ -63,6 +63,14 @@ namespace StreamEncryptor
                             Error = EncryptionError.TamperedData
                         };
                     }
+                }*/
+
+                if (!await Authenticate(stream, false).ConfigureAwait(false))
+                {
+                    throw new EncryptionException("Data has been modified after encryption")
+                    {
+                        Error = EncryptionError.TamperedData
+                    };
                 }
 
                 #endregion
@@ -195,6 +203,52 @@ namespace StreamEncryptor
                     Error = EncryptionError.EncryptionError
                 };
             }
+        }
+
+        /// <summary>
+        /// Authenticates an encrypted stream
+        /// </summary>
+        /// <typeparam name="T">The type of stream</typeparam>
+        /// <param name="stream">An encrypted stream</param>
+        /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
+        /// <returns></returns>
+        protected override async Task<bool> Authenticate<T>(T stream, bool peek)
+        {
+            await base.Authenticate(stream, peek).ConfigureAwait(false);
+
+            // Get the hash and auth salt from the stream
+            byte[] hash = new byte[_authenticator.HashSize / 8];
+            byte[] authSalt = new byte[SALT_SIZE];
+            if (peek)
+            {
+                await stream.PeekAsync(hash).ConfigureAwait(false);
+                await stream.PeekAsync(authSalt, hash.LongLength).ConfigureAwait(false);
+            }
+            else
+            {
+                await stream.ReadAsync(hash, 0, hash.Length).ConfigureAwait(false);
+                await stream.ReadAsync(authSalt, 0, authSalt.Length).ConfigureAwait(false);
+            }
+
+            // Get the auth key
+            _authenticator.Key = DeriveKey(_password, authSalt);
+
+            // Get the buffer to authenticate
+            long actualPosition = hash.LongLength + authSalt.LongLength;
+            byte[] buffer = new byte[stream.Length - actualPosition];
+            await stream.PeekAsync(buffer, actualPosition).ConfigureAwait(false);
+
+            // Compute and check the hash
+            byte[] computedHash = _authenticator.ComputeHash(buffer);
+            bool isValid = true;
+
+            for (int i = 0; i < hash.Length; i++)
+            {
+                if (hash[i] != computedHash[i])
+                    isValid = false;
+            }
+
+            return isValid;
         }
     }
 }

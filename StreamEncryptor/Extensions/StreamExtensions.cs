@@ -19,7 +19,7 @@ namespace StreamEncryptor.Extensions
         }
 
         /// <summary>
-        /// Copies the entirety of this stream to another, regardless of the position of this stream
+        /// Asynchronously copies the entirety of this stream to another, regardless of the position of this stream
         /// </summary>
         /// <param name="me"></param>
         /// <param name="stream">The stream to copy to</param>
@@ -59,14 +59,37 @@ namespace StreamEncryptor.Extensions
         }
 
         /// <summary>
-        /// Writes a byte array to the stream and resets its position
+        /// Asynchronously writes a byte array to the stream and resets its position
         /// </summary>
         /// <param name="stream">The stream to write to</param>
         /// <param name="data">The data to write</param>
         public static async Task WriteAndResetAsync(this Stream stream, byte[] data)
         {
             long position = stream.Position;
-            await stream.WriteAsync(data, 0, data.Length);
+            await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+            stream.Position = position;
+        }
+
+        /// <summary>
+        /// Asynchronously reads a sequence of bytes from the stream without advancing the position
+        /// </summary>
+        /// <param name="stream">The stream to peek from</param>
+        /// <param name="buffer">The buffer to read into</param>
+        public static async Task PeekAsync(this Stream stream, byte[] buffer)
+            => await PeekAsync(stream, buffer, stream.Position).ConfigureAwait(false);
+
+        /// <summary>
+        /// Asynchronously reads a sequence of bytes from the stream without advancing the position
+        /// </summary>
+        /// <param name="stream">The stream to peek from</param>
+        /// <param name="buffer">The buffer to read into</param>
+        /// <param name="readPos">The position at which to peek from</param>
+        public static async Task PeekAsync(this Stream stream, byte[] buffer, long readPos)
+        {
+            long position = stream.Position;
+
+            stream.Position = readPos;
+            await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
             stream.Position = position;
         }
     }

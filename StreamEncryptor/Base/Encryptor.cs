@@ -120,9 +120,9 @@ namespace StreamEncryptor.Base
         /// </summary>
         /// <typeparam name="T">The type of stream</typeparam>
         /// <param name="stream">An encrypted stream</param>
-        /// <param name="seek">Whether or not to seek through the stream when authenticating</param>
+        /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
         /// <returns></returns>
-        protected virtual Task<bool> Authenticate<T>(T stream, bool seek) where T : Stream
+        protected virtual Task<bool> Authenticate<T>(T stream, bool peek) where T : Stream
         {
             CheckDisposed();
 
