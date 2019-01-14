@@ -26,9 +26,9 @@ namespace StreamEncryptor
         /// <typeparam name="T">The type of stream to return the decrypted data as</typeparam>
         /// <param name="stream">The stream to decrypt</param>
         /// <returns></returns>
-        public override async Task<T> Decrypt<T>(Stream stream)
+        public override async Task<T> DecryptAsync<T>(Stream stream)
         {
-            await base.Decrypt(stream).ConfigureAwait(false);
+            await base.DecryptAsync<T>(stream).ConfigureAwait(false);
 
             try
             {
@@ -65,7 +65,7 @@ namespace StreamEncryptor
                     }
                 }*/
 
-                if (!await Authenticate(stream, false).ConfigureAwait(false))
+                if (!await AuthenticateAsync(stream, false).ConfigureAwait(false))
                 {
                     throw new EncryptionException("Data has been modified after encryption")
                     {
@@ -122,9 +122,9 @@ namespace StreamEncryptor
         /// </summary>
         /// <param name="entity">The entity to be encrypted</param>
         /// <returns>A stream of the encrypted data</returns>
-        public override async Task<T> Encrypt<T>(Stream stream)
+        public override async Task<T> EncryptAsync<T>(Stream stream)
         {
-            await base.Encrypt(stream).ConfigureAwait(false);
+            await base.EncryptAsync<T>(stream).ConfigureAwait(false);
 
             try
             {
@@ -212,9 +212,9 @@ namespace StreamEncryptor
         /// <param name="stream">An encrypted stream</param>
         /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
         /// <returns></returns>
-        protected override async Task<bool> Authenticate<T>(T stream, bool peek)
+        internal override async Task<bool> AuthenticateAsync<T>(T stream, bool peek)
         {
-            await base.Authenticate(stream, peek).ConfigureAwait(false);
+            await base.AuthenticateAsync(stream, peek).ConfigureAwait(false);
 
             // Get the hash and auth salt from the stream
             byte[] hash = new byte[_authenticator.HashSize / 8];

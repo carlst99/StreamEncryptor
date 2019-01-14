@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28307.271
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamEncryptor", "StreamEncryptor\StreamEncryptor.csproj", "{7CE6FDA0-BFB5-4B8F-889D-E36F4FD02C95}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamEncryptor.Tests", "StreamEncryptor.Tests\StreamEncryptor.Tests.csproj", "{AB566895-8643-45C2-9D8F-5AA5672457B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{7CE6FDA0-BFB5-4B8F-889D-E36F4FD02C95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CE6FDA0-BFB5-4B8F-889D-E36F4FD02C95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CE6FDA0-BFB5-4B8F-889D-E36F4FD02C95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB566895-8643-45C2-9D8F-5AA5672457B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB566895-8643-45C2-9D8F-5AA5672457B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB566895-8643-45C2-9D8F-5AA5672457B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB566895-8643-45C2-9D8F-5AA5672457B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
