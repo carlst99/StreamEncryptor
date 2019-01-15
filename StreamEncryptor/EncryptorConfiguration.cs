@@ -12,7 +12,7 @@ namespace StreamEncryptor
             Padding = PaddingMode.PKCS7,
             KeySize = 32,
             SaltSize = 16,
-            BufferSize = 256
+            BufferSize = 81920
         };
 
         /// <summary>

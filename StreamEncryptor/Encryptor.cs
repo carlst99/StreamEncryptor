@@ -187,11 +187,11 @@ namespace StreamEncryptor
                 // Write the IV to the stream
                 await ms.WriteAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
 
-                byte[] streamBuffer = new byte[stream.Length];
-                stream.Read(streamBuffer, 0, streamBuffer.Length);
-
-                // Write the secret to the stream
-                await cs.WriteAsync(streamBuffer, 0, streamBuffer.Length).ConfigureAwait(false);
+                byte[] streamBuffer = new byte[Configuration.BufferSize];
+                while (stream.Read(streamBuffer, 0, streamBuffer.Length) > 0)
+                {
+                    await cs.WriteAsync(streamBuffer, 0, streamBuffer.Length).ConfigureAwait(false);
+                }
 
                 // Flush buffers
                 await cs.FlushAsync().ConfigureAwait(false);
