@@ -238,8 +238,6 @@ namespace StreamEncryptor
             }
         }
 
-        #region Authentication
-
         /// <summary>
         /// Authenticates an encrypted stream
         /// </summary>
@@ -307,8 +305,6 @@ namespace StreamEncryptor
             AuthenticationResult result = await AuthenticateAsync(stream, true).ConfigureAwait(false);
             return result.AuthenticationSuccess;
         }
-
-        #endregion
 
         protected void SetupConfiguration()
         {
