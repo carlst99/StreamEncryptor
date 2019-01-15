@@ -6,8 +6,6 @@ namespace StreamEncryptor.Tests
 {
     public class EncryptorTests
     {
-        private const string PASSWORD = "password";
-
         [Fact]
         public void TestCtor()
         {
@@ -17,7 +15,7 @@ namespace StreamEncryptor.Tests
 
         private Encryptor<AesCryptoServiceProvider, HMACSHA256> GetEncryptor()
         {
-            return new Encryptor<AesCryptoServiceProvider, HMACSHA256>(PASSWORD);
+            return new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD);
         }
     }
 }

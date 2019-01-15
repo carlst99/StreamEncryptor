@@ -1,5 +1,4 @@
-﻿using StreamEncryptor.Helpers;
-using StreamEncryptor.Predefined;
+﻿using StreamEncryptor.Predefined;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -9,15 +8,12 @@ namespace StreamEncryptor.Tests
 {
     public class EncryptorAuthenticationTests
     {
-        private readonly byte[] RANDOM_BYTES = new byte[] { 80, 64, 1, 25, 97, 123, 0, 255 };
-        private readonly string PASSWORD = "password";
-
         [Fact]
         public async void TestAuthenticateValid()
         {
-            MemoryStream ms = new MemoryStream(RANDOM_BYTES);
+            MemoryStream ms = new MemoryStream(Constants.RANDOM_BYTES);
 
-            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(PASSWORD))
+            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(Constants.PASSWORD))
             {
                 MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
                 Assert.True(await encryptor.AuthenticateAsync(encrypted).ConfigureAwait(false));
@@ -28,9 +24,7 @@ namespace StreamEncryptor.Tests
         [Fact]
         public async void TestAuthenticateInvalid()
         {
-            MemoryStream ms = new MemoryStream(RANDOM_BYTES);
-
-            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(PASSWORD))
+            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(Constants.PASSWORD))
             {
                 MemoryStream tampered = await GetTamperedStream(encryptor).ConfigureAwait(false);
                 Assert.False(await encryptor.AuthenticateAsync(tampered).ConfigureAwait(false));
@@ -41,9 +35,9 @@ namespace StreamEncryptor.Tests
         [Fact]
         public async void TestAuthenticateInternalValid()
         {
-            MemoryStream ms = new MemoryStream(RANDOM_BYTES);
+            MemoryStream ms = new MemoryStream(Constants.RANDOM_BYTES);
 
-            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(PASSWORD))
+            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(Constants.PASSWORD))
             {
                 MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
 
@@ -57,7 +51,7 @@ namespace StreamEncryptor.Tests
         [Fact]
         public async void TestAuthenticateInternalInvalid()
         {
-            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(PASSWORD))
+            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(Constants.PASSWORD))
             {
                 MemoryStream tampered = await GetTamperedStream(encryptor).ConfigureAwait(false);
                 var result = await encryptor.AuthenticateAsync(tampered, false).ConfigureAwait(false);
@@ -68,9 +62,9 @@ namespace StreamEncryptor.Tests
         [Fact]
         public async void TestAuthenticateInternalPeek()
         {
-            MemoryStream ms = new MemoryStream(RANDOM_BYTES);
+            MemoryStream ms = new MemoryStream(Constants.RANDOM_BYTES);
 
-            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(PASSWORD))
+            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(Constants.PASSWORD))
             {
                 MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
 
@@ -82,18 +76,16 @@ namespace StreamEncryptor.Tests
         [Fact]
         public void TestArgChecks()
         {
-            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(PASSWORD))
+            using (AesHmacEncryptor encryptor = new AesHmacEncryptor(Constants.PASSWORD))
             {
                 Assert.ThrowsAsync<ArgumentNullException>(() => encryptor.AuthenticateAsync<MemoryStream>(null));
                 Assert.ThrowsAsync<ArgumentNullException>(() => encryptor.AuthenticateAsync(new MemoryStream()));
             }
         }
 
-
-
         private async Task<MemoryStream> GetTamperedStream(IEncryptor encryptor)
         {
-            MemoryStream ms = new MemoryStream(RANDOM_BYTES);
+            MemoryStream ms = new MemoryStream(Constants.RANDOM_BYTES);
             MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
             byte[] buffer = encrypted.GetBuffer();
 

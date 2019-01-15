@@ -13,7 +13,11 @@ namespace StreamEncryptor.Helpers
         public static byte[] DeriveKey(string key, byte[] salt, int keySize)
         {
             if (string.IsNullOrEmpty(key))
-                throw new ArgumentNullException("key may not be null or empty");
+                throw new ArgumentNullException(nameof(key), "Key may not be null or empty");
+            if (salt == null || salt.Length <= 0)
+                throw new ArgumentNullException(nameof(salt), "Salt may not be null or of zero length");
+            if (keySize <= 0)
+                throw new ArgumentException(nameof(key), "KeySize must be a positive number");
 
             try
             {
@@ -37,6 +41,9 @@ namespace StreamEncryptor.Helpers
         /// <returns>A <see cref="byte"/> array of length <see cref="SALT_SIZE"/> containing a randomly generated, cryptographically secure IV
         public static byte[] GenerateRandomIV(int saltSize)
         {
+            if (saltSize <= 0)
+                throw new ArgumentException(nameof(saltSize), "Salt size must be a positive number");
+
             byte[] iv = new byte[saltSize];
             try
             {
