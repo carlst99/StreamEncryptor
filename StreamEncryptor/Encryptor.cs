@@ -321,7 +321,7 @@ namespace StreamEncryptor
             {
                 if (disposing)
                 {
-                    _encryptor?.Dispose();
+                    _encryptor.Dispose();
                     _authenticator.Dispose();
                     _password = null;
                 }
@@ -335,7 +335,7 @@ namespace StreamEncryptor
             Dispose(true);
         }
 
-        protected void CheckDisposed()
+        public void CheckDisposed()
         {
             if (disposedValue)
                 throw new ObjectDisposedException(GetType().Name);
