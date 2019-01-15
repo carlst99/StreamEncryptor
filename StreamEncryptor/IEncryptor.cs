@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 [assembly: InternalsVisibleTo("StreamEncryptor.Tests")]
 
-namespace StreamEncryptor.Base
+namespace StreamEncryptor
 {
     public interface IEncryptor : IDisposable
     {
