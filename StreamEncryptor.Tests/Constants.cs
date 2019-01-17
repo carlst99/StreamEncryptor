@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.IO;
 
 namespace StreamEncryptor.Tests
 {
@@ -10,5 +8,7 @@ namespace StreamEncryptor.Tests
         public const int KEY_SIZE = 32;
         public const string PASSWORD = "password";
         public static readonly byte[] RANDOM_BYTES = new byte[] { 80, 64, 1, 25, 97, 123, 0, 255 };
+
+        public static MemoryStream GetRandomStream() => new MemoryStream(RANDOM_BYTES, 0, RANDOM_BYTES.Length, true, true);
     }
 }
