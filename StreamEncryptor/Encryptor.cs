@@ -68,7 +68,14 @@ namespace StreamEncryptor
         #endregion
 
         /// <summary>
-        /// When overriden in a derived class, decrypts a stream
+        /// Decrypts a stream
+        /// </summary>
+        /// <param name="stream">The stream to decrypt</param>
+        /// <returns></returns>
+        public async Task<MemoryStream> DecryptAsync(Stream stream) => await DecryptAsync<MemoryStream>(stream).ConfigureAwait(false);
+
+        /// <summary>
+        /// Decrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to decrypt to</typeparam>
         /// <param name="stream">The stream to decrypt</param>
@@ -144,7 +151,14 @@ namespace StreamEncryptor
         }
 
         /// <summary>
-        /// When overriden in a derived class, encrypts a stream
+        /// Encrypts a stream
+        /// </summary>
+        /// <param name="stream">The stream to encrypt</param>
+        /// <returns></returns>
+        public async Task<MemoryStream> EncryptAsync(Stream stream) => await EncryptAsync<MemoryStream>(stream).ConfigureAwait(false);
+
+        /// <summary>
+        /// Encrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to encrypt to</typeparam>
         /// <param name="stream">The stream to encrypt</param>
