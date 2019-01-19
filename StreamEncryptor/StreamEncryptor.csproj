@@ -6,12 +6,13 @@
     <Product />
     <Description>A small helper library to encrypt, decrypt and authenticate streams</Description>
     <PackageProjectUrl>https://github.com/carlst99/StreamEncryptor</PackageProjectUrl>
-    <PackageIconUrl>https://github.com/carlst99/StreamEncryptor/blob/master/LICENSE</PackageIconUrl>
+    <PackageIconUrl></PackageIconUrl>
     <RepositoryUrl>https://github.com/carlst99/StreamEncryptor</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageTags>encryption authentication streams</PackageTags>
     <NeutralLanguage>en-NZ</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseUrl>https://github.com/carlst99/StreamEncryptor/blob/master/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
 
 </Project>
