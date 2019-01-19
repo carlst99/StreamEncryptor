@@ -4,7 +4,7 @@ Please note that I am no expert in encryption, and this is simply a helpful wrap
 that I am not aware of!
 
 ### Installation
-I will create a nuget package as soon as I hit the release 1.0.0 milestone
+You can download StreamEncryptor from [nuget](https://www.nuget.org/packages/StreamEncryptor/)
 
 ### Documentation
 The library itself is (I think) pretty self-explanatory, however I will be adding documentation in the wiki when I get round to it
