@@ -54,9 +54,7 @@ namespace StreamEncryptor
         public Encryptor(string password, EncryptorConfiguration configuration)
         {
             if (string.IsNullOrEmpty(password))
-                throw new ArgumentNullException(nameof(password), "Key rmay not be null or empty");
-            if (configuration.Equals(null))
-                throw new ArgumentNullException(nameof(configuration));
+                throw new ArgumentNullException(nameof(password), "Key may not be null or empty");
 
             _password = password;
             Configuration = configuration;
@@ -70,7 +68,14 @@ namespace StreamEncryptor
         #endregion
 
         /// <summary>
-        /// When overriden in a derived class, decrypts a stream
+        /// Decrypts a stream
+        /// </summary>
+        /// <param name="stream">The stream to decrypt</param>
+        /// <returns></returns>
+        public async Task<MemoryStream> DecryptAsync(Stream stream) => await DecryptAsync<MemoryStream>(stream).ConfigureAwait(false);
+
+        /// <summary>
+        /// Decrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to decrypt to</typeparam>
         /// <param name="stream">The stream to decrypt</param>
@@ -146,7 +151,14 @@ namespace StreamEncryptor
         }
 
         /// <summary>
-        /// When overriden in a derived class, encrypts a stream
+        /// Encrypts a stream
+        /// </summary>
+        /// <param name="stream">The stream to encrypt</param>
+        /// <returns></returns>
+        public async Task<MemoryStream> EncryptAsync(Stream stream) => await EncryptAsync<MemoryStream>(stream).ConfigureAwait(false);
+
+        /// <summary>
+        /// Encrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to encrypt to</typeparam>
         /// <param name="stream">The stream to encrypt</param>
@@ -323,7 +335,7 @@ namespace StreamEncryptor
             {
                 if (disposing)
                 {
-                    _encryptor?.Dispose();
+                    _encryptor.Dispose();
                     _authenticator.Dispose();
                     _password = null;
                 }
@@ -337,7 +349,7 @@ namespace StreamEncryptor
             Dispose(true);
         }
 
-        protected void CheckDisposed()
+        public void CheckDisposed()
         {
             if (disposedValue)
                 throw new ObjectDisposedException(GetType().Name);

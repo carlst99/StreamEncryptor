@@ -10,10 +10,5 @@
             AuthenticationSuccess = result;
             RemainingStream = remainingStream;
         }
-
-        public void Clear()
-        {
-            RemainingStream = null;
-        }
     }
 }
