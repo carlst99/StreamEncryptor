@@ -289,12 +289,6 @@ namespace StreamEncryptor
                     isValid = false;
             }
 
-            // Return the stream position
-            /*if (peek)
-                stream.Position = position;
-            else
-                stream.Position = hash.LongLength + authSalt.LongLength;*/
-
             if (peek)
             {
                 stream.Position = position;
