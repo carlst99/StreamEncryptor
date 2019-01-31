@@ -21,6 +21,9 @@ namespace StreamEncryptor.Tests
             }
         }
 
-        public static async Task<MemoryStream> GetEncryptedStream() => await GetEncryptedStream<AesCryptoServiceProvider, HMACSHA256>().ConfigureAwait(false);
+        public static async Task<MemoryStream> GetEncryptedStream()
+        {
+            return await GetEncryptedStream<AesCryptoServiceProvider, HMACSHA256>().ConfigureAwait(false);
+        }
     }
 }

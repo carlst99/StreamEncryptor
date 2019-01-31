@@ -67,6 +67,8 @@ namespace StreamEncryptor
 
         #endregion
 
+        #region Decrypt
+
         /// <summary>
         /// Decrypts a stream
         /// </summary>
@@ -89,9 +91,16 @@ namespace StreamEncryptor
 
             T returnStream = new T();
             await DecryptAsync(stream, returnStream);
+
+            returnStream.Position = 0;
             return returnStream;
         }
 
+        /// <summary>
+        /// Decrypts a stream
+        /// </summary>
+        /// <param name="encryptedStream">The stream to decrypt</param>
+        /// <param name="outputStream">The stream to write the decrypted output to</param>
         public async Task DecryptAsync(Stream encryptedStream, Stream outputStream)
         {
             CheckDisposed();
@@ -157,6 +166,10 @@ namespace StreamEncryptor
             }
         }
 
+        #endregion
+
+        #region Encrypt
+
         /// <summary>
         /// Encrypts a stream
         /// </summary>
@@ -176,6 +189,27 @@ namespace StreamEncryptor
 
             if (stream.IsNullOrEmpty())
                 throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
+
+            T returnStream = new T();
+            await EncryptAsync(stream, returnStream);
+
+            returnStream.Position = 0;
+            return returnStream;
+        }
+
+        /// <summary>
+        /// Encrypts a stream
+        /// </summary>
+        /// <param name="toEncrypt">The stream to encrypt</param>
+        /// <param name="outputStream">The stream to write the encrypted output to</param>
+        public async Task EncryptAsync(Stream toEncrypt, Stream outputStream)
+        {
+            CheckDisposed();
+
+            if (toEncrypt.IsNullOrEmpty())
+                throw new ArgumentNullException(nameof(toEncrypt), "Stream cannot be null or empty");
+            if (outputStream == null)
+                throw new ArgumentNullException(nameof(toEncrypt));
 
             try
             {
@@ -207,7 +241,7 @@ namespace StreamEncryptor
                 await ms.WriteAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
 
                 byte[] streamBuffer = new byte[Configuration.BufferSize];
-                while (stream.Read(streamBuffer, 0, streamBuffer.Length) > 0)
+                while (toEncrypt.Read(streamBuffer, 0, streamBuffer.Length) > 0)
                 {
                     await cs.WriteAsync(streamBuffer, 0, streamBuffer.Length).ConfigureAwait(false);
                 }
@@ -218,8 +252,6 @@ namespace StreamEncryptor
 
                 #endregion
 
-                T returnStream = new T();
-
                 #region Authentication
 
                 // Get the buffer of ms
@@ -229,24 +261,21 @@ namespace StreamEncryptor
 
                 // Get the hash and write it to the stream
                 byte[] hash = _authenticator.ComputeHash(buffer);
-                await returnStream.WriteAsync(hash, 0, hash.Length).ConfigureAwait(false);
+                await outputStream.WriteAsync(hash, 0, hash.Length).ConfigureAwait(false);
 
                 // Write the auth salt to the stream
-                await returnStream.WriteAsync(authSalt, 0, authSalt.Length).ConfigureAwait(false);
+                await outputStream.WriteAsync(authSalt, 0, authSalt.Length).ConfigureAwait(false);
 
                 #endregion
 
                 #region FinaliseReturn
 
-                await returnStream.WriteAndResetAsync(buffer).ConfigureAwait(false);
+                await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
 
                 // Dispose of sw and underlying streams
                 cs.Dispose();
 
                 #endregion
-
-                returnStream.Position = 0;
-                return returnStream;
             }
             catch (Exception ex)
             {
@@ -256,6 +285,10 @@ namespace StreamEncryptor
                 };
             }
         }
+
+        #endregion
+
+        #region Authenticate
 
         /// <summary>
         /// Authenticates an encrypted stream
@@ -318,6 +351,8 @@ namespace StreamEncryptor
             AuthenticationResult result = await AuthenticateAsync(stream, true).ConfigureAwait(false);
             return result.AuthenticationSuccess;
         }
+
+        #endregion
 
         protected void SetupConfiguration()
         {

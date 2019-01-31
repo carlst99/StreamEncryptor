@@ -18,6 +18,13 @@ namespace StreamEncryptor
         Task<T> DecryptAsync<T>(Stream stream) where T : Stream, new();
 
         /// <summary>
+        /// Decrypts a stream
+        /// </summary>
+        /// <param name="encryptedStream">The stream to decrypt</param>
+        /// <param name="outputStream">The stream to write the decrypted output to</param>
+        Task DecryptAsync(Stream encryptedStream, Stream outputStream);
+
+        /// <summary>
         /// Encrypts a stream
         /// </summary>
         /// <typeparam name="T">The type of stream to encrypt to</typeparam>
