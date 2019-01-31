@@ -303,6 +303,7 @@ namespace StreamEncryptor
 
             if (stream.IsNullOrEmpty())
                 throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
+
             long position = stream.Position;
 
             // Get the hash and auth salt from the stream
