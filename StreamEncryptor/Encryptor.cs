@@ -355,6 +355,22 @@ namespace StreamEncryptor
 
         #endregion
 
+        /// <summary>
+        /// Updates the password used for encryption/decryption
+        /// </summary>
+        /// <param name="newPassword"></param>
+        /// <remarks>This method is useful when using patterns like dependency injection. 
+        /// Note that decrypting a stream requires the same password that was used to encrypt it
+        /// </remarks>
+        public void SetPassword(string newPassword)
+        {
+            CheckDisposed();
+            if (string.IsNullOrEmpty(newPassword))
+                throw new ArgumentNullException(nameof(newPassword), "Password may not be null or empty!");
+
+            _password = newPassword;
+        }
+
         protected void SetupConfiguration()
         {
             _encryptor.Mode = Configuration.Mode;
