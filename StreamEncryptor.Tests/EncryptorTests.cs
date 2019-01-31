@@ -88,6 +88,9 @@ namespace StreamEncryptor.Tests
         {
             using (var encryptor = GetEncryptor())
             {
+                Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(null));
+                Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(string.Empty));
+
                 MemoryStream ms = await Constants.GetEncryptedStream();
                 encryptor.SetPassword(Constants.PASSWORD.Reverse().ToString());
                 Assert.False(await encryptor.AuthenticateAsync(ms));
