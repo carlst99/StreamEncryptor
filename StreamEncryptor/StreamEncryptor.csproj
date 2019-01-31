@@ -13,6 +13,8 @@
     <NeutralLanguage>en-NZ</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl>https://github.com/carlst99/StreamEncryptor/blob/master/LICENSE</PackageLicenseUrl>
+    <Version>1.1.1</Version>
+    <PackageReleaseNotes>Performance enhancements - you can now pass an output stream directly to the EncryptAsync and DecryptAsync methods of an Encryptor</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>
