@@ -83,6 +83,17 @@ namespace StreamEncryptor.Tests
             }
         }
 
+        [Fact]
+        public async void TestSetPassword()
+        {
+            using (var encryptor = GetEncryptor())
+            {
+                MemoryStream ms = await Constants.GetEncryptedStream();
+                encryptor.SetPassword(Constants.PASSWORD.Reverse().ToString());
+                Assert.False(await encryptor.AuthenticateAsync(ms));
+            }
+        }
+
         private Encryptor<AesCryptoServiceProvider, HMACSHA256> GetEncryptor()
         {
             return new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD);
