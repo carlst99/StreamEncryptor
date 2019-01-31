@@ -85,15 +85,28 @@ namespace StreamEncryptor
             CheckDisposed();
 
             if (stream.IsNullOrEmpty())
-                throw new ArgumentNullException("Stream cannot be null or empty");
+                throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
+
+            T returnStream = new T();
+            await DecryptAsync(stream, returnStream);
+            return returnStream;
+        }
+
+        public async Task DecryptAsync(Stream encryptedStream, Stream outputStream)
+        {
+            CheckDisposed();
+
+            if (encryptedStream.IsNullOrEmpty())
+                throw new ArgumentNullException(nameof(encryptedStream), "Stream cannot be null or empty");
+            if (encryptedStream == null)
+                throw new ArgumentNullException(nameof(outputStream));
 
             try
             {
-                stream.Position = 0;
-
                 #region Authentication
 
-                AuthenticationResult authenticationResult = await AuthenticateAsync(stream, false).ConfigureAwait(false);
+                // Authenticate the stream without peeking and get the remaining data for decryption
+                AuthenticationResult authenticationResult = await AuthenticateAsync(encryptedStream, false).ConfigureAwait(false);
 
                 if (!authenticationResult.AuthenticationSuccess)
                 {
@@ -112,6 +125,7 @@ namespace StreamEncryptor
                 // Read the key IV from the stream
                 byte[] keySalt = new byte[Configuration.SaltSize];
                 await remainingStream.ReadAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
+
                 // Get the encryption key
                 _encryptor.Key = EncryptionHelpers.DeriveKey(_password, keySalt, Configuration.KeySize);
 
@@ -119,8 +133,6 @@ namespace StreamEncryptor
                 await remainingStream.ReadAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
 
                 #endregion
-
-                T decryptedSecret = new T();
 
                 #region Decryption
 
@@ -130,16 +142,11 @@ namespace StreamEncryptor
 
                     while (cs.Read(buff, 0, buff.Length) != 0)
                     {
-                        await decryptedSecret.WriteAsync(buff, 0, buff.Length).ConfigureAwait(false);
+                        await outputStream.WriteAsync(buff, 0, buff.Length).ConfigureAwait(false);
                     }
-
-                    decryptedSecret.Position = 0;
                 }
 
                 #endregion
-
-                decryptedSecret.Position = 0;
-                return decryptedSecret;
             }
             catch (Exception ex)
             {
@@ -168,7 +175,7 @@ namespace StreamEncryptor
             CheckDisposed();
 
             if (stream.IsNullOrEmpty())
-                throw new ArgumentNullException("Stream cannot be null or empty");
+                throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
 
             try
             {
@@ -262,7 +269,7 @@ namespace StreamEncryptor
             CheckDisposed();
 
             if (stream.IsNullOrEmpty())
-                throw new ArgumentNullException("Stream cannot be null or empty");
+                throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
             long position = stream.Position;
 
             // Get the hash and auth salt from the stream
