@@ -13,7 +13,7 @@
     <NeutralLanguage>en-NZ</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl>https://github.com/carlst99/StreamEncryptor/blob/master/LICENSE</PackageLicenseUrl>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <PackageReleaseNotes>Adds the SetPassword method to Encryptor</PackageReleaseNotes>
   </PropertyGroup>
 
