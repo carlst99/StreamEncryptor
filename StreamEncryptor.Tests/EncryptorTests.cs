@@ -94,6 +94,9 @@ namespace StreamEncryptor.Tests
                 MemoryStream ms = await Constants.GetEncryptedStream();
                 encryptor.SetPassword(Constants.PASSWORD.Reverse().ToString());
                 Assert.False(await encryptor.AuthenticateAsync(ms));
+
+                encryptor.SetPassword(Constants.PASSWORD);
+                Assert.True(await encryptor.AuthenticateAsync(ms));
             }
         }
 
