@@ -149,10 +149,11 @@ namespace StreamEncryptor
                 {
                     byte[] buff = new byte[Configuration.BufferSize];
 
-                    while (cs.Read(buff, 0, buff.Length) != 0)
+                    cs.Read(buff, 0, buff.Length);
+                    do
                     {
                         await outputStream.WriteAsync(buff, 0, buff.Length).ConfigureAwait(false);
-                    }
+                    } while (cs.Read(buff, 0, buff.Length) != 0);
                 }
 
                 #endregion
