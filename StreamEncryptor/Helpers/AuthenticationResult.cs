@@ -2,13 +2,13 @@
 {
     internal struct AuthenticationResult
     {
-        public byte[] RemainingStream;
+        public byte[] Buffer;
         public bool AuthenticationSuccess;
 
         public AuthenticationResult(bool result, byte[] remainingStream)
         {
             AuthenticationSuccess = result;
-            RemainingStream = remainingStream;
+            Buffer = remainingStream;
         }
     }
 }

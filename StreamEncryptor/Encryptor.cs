@@ -107,7 +107,7 @@ namespace StreamEncryptor
 
             if (encryptedStream.IsNullOrEmpty())
                 throw new ArgumentNullException(nameof(encryptedStream), "Stream cannot be null or empty");
-            if (encryptedStream == null)
+            if (outputStream == null)
                 throw new ArgumentNullException(nameof(outputStream));
 
             try
@@ -127,7 +127,7 @@ namespace StreamEncryptor
 
                 #endregion
 
-                MemoryStream remainingStream = new MemoryStream(authenticationResult.RemainingStream);
+                MemoryStream remainingStream = new MemoryStream(authenticationResult.Buffer);
 
                 #region Get IVs, Keys and hashes
 
@@ -149,7 +149,7 @@ namespace StreamEncryptor
                 {
                     byte[] buff = new byte[Configuration.BufferSize];
 
-                    while (cs.Read(buff, 0, buff.Length) != 0)
+                    while (cs.Read(buff, 0, buff.Length) > 0)
                     {
                         await outputStream.WriteAsync(buff, 0, buff.Length).ConfigureAwait(false);
                     }
