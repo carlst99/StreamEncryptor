@@ -107,7 +107,7 @@ namespace StreamEncryptor
 
             if (encryptedStream.IsNullOrEmpty())
                 throw new ArgumentNullException(nameof(encryptedStream), "Stream cannot be null or empty");
-            if (encryptedStream == null)
+            if (outputStream == null)
                 throw new ArgumentNullException(nameof(outputStream));
 
             try
