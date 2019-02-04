@@ -42,7 +42,7 @@ namespace StreamEncryptor.Tests
                 MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
 
                 var result = await encryptor.AuthenticateAsync(encrypted, false).ConfigureAwait(false);
-                Assert.NotNull(result.RemainingStream);
+                Assert.NotNull(result.Buffer);
                 Assert.True(result.AuthenticationSuccess);
                 Assert.True(encrypted.Position != 0);
             }
@@ -69,7 +69,7 @@ namespace StreamEncryptor.Tests
                 MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
 
                 var result = await encryptor.AuthenticateAsync(encrypted, true).ConfigureAwait(false);
-                Assert.Null(result.RemainingStream);
+                Assert.Null(result.Buffer);
             }
         }
 
