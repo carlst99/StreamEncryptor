@@ -14,7 +14,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl>https://github.com/carlst99/StreamEncryptor/blob/master/LICENSE</PackageLicenseUrl>
     <Version>1.1.4</Version>
-    <PackageReleaseNotes>Adds the SetPassword method to Encryptor</PackageReleaseNotes>
+    <PackageReleaseNotes>Improvements to EncryptorConfiguration</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>
