@@ -20,5 +20,16 @@ namespace StreamEncryptor.Tests
             Assert.Equal(EncryptorConfiguration.Default.SaltSize, configuration.SaltSize);
             Assert.Equal(EncryptorConfiguration.Default.BufferSize, configuration.BufferSize);
         }
+
+        [Fact]
+        public void TestCheckConfiguration()
+        {
+            EncryptorConfiguration configuration = EncryptorConfiguration.Default;
+            Assert.True(configuration.CheckConfigValid());
+
+            configuration = new EncryptorConfiguration(System.Security.Cryptography.CipherMode.CBC,
+                System.Security.Cryptography.PaddingMode.PKCS7, 0, 0, 0);
+            Assert.False(configuration.CheckConfigValid());
+        }
     }
 }

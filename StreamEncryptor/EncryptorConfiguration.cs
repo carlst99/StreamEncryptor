@@ -12,7 +12,7 @@ namespace StreamEncryptor
             Padding = PaddingMode.PKCS7,
             KeySize = 32,
             SaltSize = 16,
-            BufferSize = 81920
+            BufferSize = 40960
         };
 
         /// <summary>
@@ -50,5 +50,20 @@ namespace StreamEncryptor
         }
 
         public int GetKeySizeInBits() => KeySize * BIT_MULTIPLIER;
+
+        public int GetSaltSizeInBits() => SaltSize * BIT_MULTIPLIER;
+
+        /// <summary>
+        /// Checks that this configuration is valid
+        /// </summary>
+        /// <returns></returns>
+        public bool CheckConfigValid()
+        {
+            return BufferSize > 0
+                && KeySize > 0
+                && SaltSize > 0;
+        }
+
+
     }
 }
