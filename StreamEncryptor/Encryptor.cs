@@ -55,6 +55,8 @@ namespace StreamEncryptor
         {
             if (string.IsNullOrEmpty(password))
                 throw new ArgumentNullException(nameof(password), "Key may not be null or empty");
+            if (!configuration.CheckConfigValid())
+                throw new InvalidOperationException("Invalid configuration specified!");
 
             _password = password;
             Configuration = configuration;
