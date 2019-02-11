@@ -272,6 +272,8 @@ namespace StreamEncryptor
 
                 #region FinaliseReturn
 
+                byte[] bufferLength = BitConverter.GetBytes(buffer.Length);
+                await outputStream.WriteAsync(bufferLength, 0, bufferLength.Length);
                 await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
 
                 // Dispose of sw and underlying streams
