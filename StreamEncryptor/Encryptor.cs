@@ -2,6 +2,7 @@
 using StreamEncryptor.Extensions;
 using StreamEncryptor.Helpers;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -131,11 +132,11 @@ namespace StreamEncryptor
 
                 MemoryStream remainingStream = new MemoryStream(authenticationResult.Buffer);
 
-                #region Get IVs, Keys and hashes
+                #region Get length of data, IVs, Keys and hashes
 
                 // Read the length of the data
-                byte[] length = new byte[sizeof(int)];
-                await remainingStream.ReadAsync(length, 0, length.Length);
+                byte[] length = new byte[sizeof(long)];
+                await remainingStream.ReadAsync(length, 0, length.Length).ConfigureAwait(false);
 
                 // Read the key IV from the stream
                 byte[] keySalt = new byte[Configuration.SaltSize];
@@ -146,6 +147,15 @@ namespace StreamEncryptor
 
                 // Read the IV from the stream
                 await remainingStream.ReadAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
+
+#if DEBUG_DUMP
+                PrintDebugFirst(encryptedStream, "Stream to decrypt");
+                PrintDebugFirst(remainingStream, "Stream after authentication");
+                PrintDebug(length, "Length");
+                PrintDebug(keySalt, "KeySalt");
+                PrintDebug(_encryptor.IV, "Encryptor IV");
+                PrintDebugFirst(remainingStream, "Encrypted data to decrypt", true);
+#endif
 
                 #endregion
 
@@ -160,6 +170,10 @@ namespace StreamEncryptor
                         await outputStream.WriteAsync(buff, 0, buff.Length).ConfigureAwait(false);
                     }
                 }
+
+#if DEBUG_DUMP
+                PrintDebugFirst(outputStream, "Decrypted data");
+#endif
 
                 #endregion
             }
@@ -180,7 +194,6 @@ namespace StreamEncryptor
         /// Encrypts a stream
         /// </summary>
         /// <param name="stream">The stream to encrypt</param>
-        /// <returns></returns>
         public async Task<MemoryStream> EncryptAsync(Stream stream) => await EncryptAsync<MemoryStream>(stream).ConfigureAwait(false);
 
         /// <summary>
@@ -188,7 +201,6 @@ namespace StreamEncryptor
         /// </summary>
         /// <typeparam name="T">The type of stream to encrypt to</typeparam>
         /// <param name="stream">The stream to encrypt</param>
-        /// <returns></returns>
         public async Task<T> EncryptAsync<T>(Stream stream) where T : Stream, new()
         {
             CheckDisposed();
@@ -197,7 +209,7 @@ namespace StreamEncryptor
                 throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
 
             T returnStream = new T();
-            await EncryptAsync(stream, returnStream);
+            await EncryptAsync(stream, returnStream).ConfigureAwait(false);
 
             returnStream.Position = 0;
             return returnStream;
@@ -242,7 +254,7 @@ namespace StreamEncryptor
                 CryptoStream cs = new CryptoStream(ms, _encryptor.CreateEncryptor(), CryptoStreamMode.Write); // Encryptor stream
 
                 //Prepare space for the length of the buffer
-                await ms.WriteAsync(new byte[sizeof(int)], 0, sizeof(int));
+                await ms.WriteAsync(new byte[sizeof(long)], 0, sizeof(long)).ConfigureAwait(false);
 
                 // Write the key salt to the stream
                 await ms.WriteAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
@@ -262,7 +274,7 @@ namespace StreamEncryptor
                 // Write the length of the buffer
                 ms.Position = 0;
                 byte[] bufferLength = BitConverter.GetBytes(ms.Length);
-                await ms.WriteAsync(bufferLength, 0, bufferLength.Length);
+                await ms.WriteAsync(bufferLength, 0, bufferLength.Length).ConfigureAwait(false);
 
                 #endregion
 
@@ -285,6 +297,16 @@ namespace StreamEncryptor
                 #region FinaliseReturn
 
                 await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+
+#if DEBUG_DUMP
+                PrintDebug(toEncrypt, "Stream to encrypt", true);
+                PrintDebug(bufferLength, "Length");
+                PrintDebug(keySalt, "Key Salt");
+                PrintDebug(_encryptor.IV, "Encryptor IV");
+                PrintDebug(hash, "Authenticator Hash");
+                PrintDebug(authSalt, "Authenticator Salt");
+                PrintDebugFirst(outputStream, "Encrypted output stream");
+#endif
 
                 // Dispose of sw and underlying streams
                 cs.Dispose();
@@ -310,7 +332,6 @@ namespace StreamEncryptor
         /// <typeparam name="T">The type of stream</typeparam>
         /// <param name="stream">An encrypted stream</param>
         /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
-        /// <returns></returns>
         internal async Task<AuthenticationResult> AuthenticateAsync<T>(T stream, bool peek) where T : Stream
         {
             CheckDisposed();
@@ -363,7 +384,6 @@ namespace StreamEncryptor
         /// </summary>
         /// <typeparam name="T">The type of stream</typeparam>
         /// <param name="stream">An encrypted stream</param>
-        /// <returns></returns>
         public async Task<bool> AuthenticateAsync<T>(T stream) where T : Stream
         {
             AuthenticationResult result = await AuthenticateAsync(stream, true).ConfigureAwait(false);
@@ -394,6 +414,73 @@ namespace StreamEncryptor
             _encryptor.Padding = Configuration.Padding;
             _encryptor.KeySize = Configuration.GetKeySizeInBits();
         }
+
+        #region Debug printing
+
+#if DEBUG_DUMP
+
+        /// <summary>
+        /// Prints a byte array to the debug console
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="message"></param>
+        private void PrintDebug(byte[] data, string message)
+        {
+            Debug.WriteLine(message);
+            foreach (byte element in data)
+                Debug.Write(element.ToString());
+            Debug.WriteLine(string.Empty);
+            Debug.WriteLine("============");
+        }
+
+        /// <summary>
+        /// Prints a stream to the debug console
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="message"></param>
+        /// <param name="printAll">A value indicating whether the stream should be printed from its beginning or its current position</param>
+        private void PrintDebug(Stream stream, string message, bool printAll = false)
+        {
+            long pos = stream.Position;
+            byte[] data = null;
+
+            if (printAll)
+            {
+                stream.Position = 0;
+                data = new byte[stream.Length];
+            } else
+            {
+                data = new byte[stream.Length - stream.Position];
+            }
+
+            stream.Read(data, 0, data.Length);
+            PrintDebug(data, message);
+
+            stream.Position = pos;
+        }
+
+        /// <summary>
+        /// Prints the first 256 bytes of a stream to the debug console
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="message"></param>
+        private void PrintDebugFirst(Stream stream, string message, bool fromCurrentPosition = false)
+        {
+            long pos = stream.Position;
+            byte[] data = new byte[256];
+
+            if (!fromCurrentPosition)
+                stream.Position = 0;
+
+            stream.Read(data, 0, data.Length);
+            PrintDebug(data, message);
+
+            stream.Position = pos;
+        }
+
+#endif
+
+        #endregion
 
         #region IDisposable Support
 

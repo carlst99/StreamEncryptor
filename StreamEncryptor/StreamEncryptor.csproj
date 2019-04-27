@@ -17,4 +17,8 @@
     <PackageReleaseNotes>Improvements to EncryptorConfiguration</PackageReleaseNotes>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+  </PropertyGroup>
+
 </Project>
