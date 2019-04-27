@@ -43,7 +43,7 @@ namespace StreamEncryptor.Tests
         {
             using (var encryptor = GetEncryptor())
             {
-                await Assert.ThrowsAsync<ArgumentNullException>(() => encryptor.EncryptAsync(null)).ConfigureAwait(false);
+                await Assert.ThrowsAsync<ArgumentNullException>(() => encryptor.DecryptAsync(null)).ConfigureAwait(false);
 
                 MemoryStream decryptedStream = await encryptor.DecryptAsync(await Constants.GetEncryptedStream().ConfigureAwait(false)).ConfigureAwait(false);
                 Assert.False(decryptedStream.IsNullOrEmpty());

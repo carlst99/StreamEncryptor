@@ -133,6 +133,10 @@ namespace StreamEncryptor
 
                 #region Get IVs, Keys and hashes
 
+                // Read the length of the data
+                byte[] length = new byte[sizeof(int)];
+                await remainingStream.ReadAsync(length, 0, length.Length);
+
                 // Read the key IV from the stream
                 byte[] keySalt = new byte[Configuration.SaltSize];
                 await remainingStream.ReadAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
@@ -237,6 +241,9 @@ namespace StreamEncryptor
                 MemoryStream ms = new MemoryStream(); // Encrypted stream
                 CryptoStream cs = new CryptoStream(ms, _encryptor.CreateEncryptor(), CryptoStreamMode.Write); // Encryptor stream
 
+                //Prepare space for the length of the buffer
+                await ms.WriteAsync(new byte[sizeof(int)], 0, sizeof(int));
+
                 // Write the key salt to the stream
                 await ms.WriteAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
                 // Write the IV to the stream
@@ -251,6 +258,11 @@ namespace StreamEncryptor
                 // Flush buffers
                 await cs.FlushAsync().ConfigureAwait(false);
                 cs.FlushFinalBlock();
+
+                // Write the length of the buffer
+                ms.Position = 0;
+                byte[] bufferLength = BitConverter.GetBytes(ms.Length);
+                await ms.WriteAsync(bufferLength, 0, bufferLength.Length);
 
                 #endregion
 
@@ -272,8 +284,6 @@ namespace StreamEncryptor
 
                 #region FinaliseReturn
 
-                byte[] bufferLength = BitConverter.GetBytes(buffer.Length);
-                await outputStream.WriteAsync(bufferLength, 0, bufferLength.Length);
                 await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
 
                 // Dispose of sw and underlying streams
@@ -331,7 +341,10 @@ namespace StreamEncryptor
             for (int i = 0; i < hash.Length; i++)
             {
                 if (hash[i] != computedHash[i])
+                {
                     isValid = false;
+                    break;
+                }
             }
 
             if (peek)
