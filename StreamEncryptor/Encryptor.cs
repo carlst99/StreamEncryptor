@@ -253,7 +253,7 @@ namespace StreamEncryptor
                 MemoryStream ms = new MemoryStream(); // Encrypted stream
                 CryptoStream cs = new CryptoStream(ms, _encryptor.CreateEncryptor(), CryptoStreamMode.Write); // Encryptor stream
 
-                //Prepare space for the length of the buffer
+                // Prepare space for the buffer length
                 await ms.WriteAsync(new byte[sizeof(long)], 0, sizeof(long)).ConfigureAwait(false);
 
                 // Write the key salt to the stream
