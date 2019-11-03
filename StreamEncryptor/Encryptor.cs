@@ -144,6 +144,7 @@ namespace StreamEncryptor
                 // Read the length of the data
                 byte[] length = new byte[LENGTH_ALLOCATION_SIZE];
                 await encryptedStream.ReadAsync(length, 0, length.Length).ConfigureAwait(false);
+                long payloadLength = BitConverter.ToInt64(length, 0);
 
                 // Read the key IV from the stream
                 byte[] keySalt = new byte[Configuration.SaltSize];
@@ -172,8 +173,21 @@ namespace StreamEncryptor
                 {
                     byte[] buffer = new byte[Configuration.BufferSize];
 
-                    while (cs.Read(buffer, 0, buffer.Length) > 0)
-                        await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    int numRead;
+                    while ((numRead = await cs.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    {
+                        // Make sure we are not writing unnecessary bytes to the output
+                        if (numRead < Configuration.BufferSize)
+                        {
+                            int finalLength = (int)(payloadLength - outputStream.Length);
+                            byte[] finalBuffer = new byte[finalLength];
+                            Array.Copy(buffer, 0, finalBuffer, 0, finalLength);
+                            await outputStream.WriteAsync(finalBuffer, 0, finalBuffer.Length).ConfigureAwait(false);
+                        } else
+                        {
+                            await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                        }
+                    }
                 }
 
 #if DEBUG_DUMP
@@ -262,7 +276,7 @@ namespace StreamEncryptor
 
                 // Allocate space for the authentication hash, auth salt and payload length
                 await outputStream.WriteAsync(new byte[_authenticator.HashSize / 8], 0, _authenticator.HashSize / 8).ConfigureAwait(false);
-                await outputStream.WriteAsync(new byte[Configuration.SaltSize], 0, Configuration.SaltSize);
+                await outputStream.WriteAsync(new byte[Configuration.SaltSize], 0, Configuration.SaltSize).ConfigureAwait(false);
                 await outputStream.WriteAsync(new byte[LENGTH_ALLOCATION_SIZE], 0, LENGTH_ALLOCATION_SIZE).ConfigureAwait(false);
 
                 // Write the key salt to the stream
@@ -303,8 +317,6 @@ namespace StreamEncryptor
 
                 #endregion
 
-                #region FinaliseReturn
-
 #if DEBUG_DUMP
                 PrintDebug(toEncrypt, "Stream to encrypt", true);
                 PrintDebug(bufferLength, "Length");
@@ -315,7 +327,6 @@ namespace StreamEncryptor
                 PrintDebugFirst256(outputStream, "Encrypted output stream");
 #endif
 
-                #endregion
             }
             catch (Exception ex)
             {
