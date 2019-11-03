@@ -91,12 +91,28 @@ namespace StreamEncryptor.Tests
                 Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(null));
                 Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(string.Empty));
 
-                MemoryStream ms = await Constants.GetEncryptedStream();
+                MemoryStream ms = await Constants.GetEncryptedStream().ConfigureAwait(false);
                 encryptor.SetPassword(Constants.PASSWORD.Reverse().ToString());
-                Assert.False(await encryptor.AuthenticateAsync(ms));
+                Assert.False(await encryptor.AuthenticateAsync(ms).ConfigureAwait(false));
 
                 encryptor.SetPassword(Constants.PASSWORD);
-                Assert.True(await encryptor.AuthenticateAsync(ms));
+                Assert.True(await encryptor.AuthenticateAsync(ms).ConfigureAwait(false));
+            }
+        }
+
+        [Fact]
+        public async void TestRoundTripOnFile()
+        {
+            using (var encryptor = GetEncryptor())
+            using (FileStream fs = new FileStream("TestFile.png", FileMode.Open, FileAccess.Read))
+            {
+                MemoryStream encryptedStream = await encryptor.EncryptAsync(fs).ConfigureAwait(false);
+                encryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
+
+                byte[] fsBuffer = new byte[fs.Length];
+                fs.Position = 0;
+                await fs.ReadAsync(fsBuffer).ConfigureAwait(false);
+                Assert.Equal(fsBuffer, encryptedStream.GetBuffer().Take((int)fs.Length));
             }
         }
 

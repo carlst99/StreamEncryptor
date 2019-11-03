@@ -41,9 +41,8 @@ namespace StreamEncryptor.Tests
             {
                 MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
 
-                var result = await encryptor.AuthenticateAsync(encrypted, false).ConfigureAwait(false);
-                Assert.NotNull(result.Buffer);
-                Assert.True(result.AuthenticationSuccess);
+                bool result = await encryptor.AuthenticateAsync(encrypted, false).ConfigureAwait(false);
+                Assert.True(result);
                 Assert.True(encrypted.Position != 0);
             }
         }
@@ -54,8 +53,8 @@ namespace StreamEncryptor.Tests
             using (AesHmacEncryptor encryptor = new AesHmacEncryptor(Constants.PASSWORD))
             {
                 MemoryStream tampered = await GetTamperedStream(encryptor).ConfigureAwait(false);
-                var result = await encryptor.AuthenticateAsync(tampered, false).ConfigureAwait(false);
-                Assert.False(result.AuthenticationSuccess);
+                bool result = await encryptor.AuthenticateAsync(tampered, false).ConfigureAwait(false);
+                Assert.False(result);
             }
         }
 
@@ -69,7 +68,7 @@ namespace StreamEncryptor.Tests
                 MemoryStream encrypted = await encryptor.EncryptAsync<MemoryStream>(ms).ConfigureAwait(false);
 
                 var result = await encryptor.AuthenticateAsync(encrypted, true).ConfigureAwait(false);
-                Assert.Null(result.Buffer);
+                Assert.Equal(0L, encrypted.Position);
             }
         }
 

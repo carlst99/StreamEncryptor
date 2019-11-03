@@ -34,4 +34,10 @@
     <ProjectReference Include="..\StreamEncryptor\StreamEncryptor.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestFile.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

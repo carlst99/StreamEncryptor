@@ -12,9 +12,10 @@
     <PackageTags>encryption authentication streams</PackageTags>
     <NeutralLanguage>en-NZ</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageLicenseUrl>https://github.com/carlst99/StreamEncryptor/blob/master/LICENSE</PackageLicenseUrl>
-    <Version>1.1.4</Version>
-    <PackageReleaseNotes>Improvements to EncryptorConfiguration</PackageReleaseNotes>
+    <PackageLicenseUrl></PackageLicenseUrl>
+    <Version>1.1.5</Version>
+    <PackageReleaseNotes>Lower memory allocation - note that this will increase encryption/decryption times for non-memory based output streams</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
