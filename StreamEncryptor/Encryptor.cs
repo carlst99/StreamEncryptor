@@ -274,7 +274,7 @@ namespace StreamEncryptor
                 {
                     await toEncrypt.CopyToAsync(cs).ConfigureAwait(false);
                     cs.FlushFinalBlock();
-                    outputBuffer.CopyAllTo(outputStream);
+                    await outputBuffer.CopyAllToAsync(outputStream).ConfigureAwait(false);
                 }
 
                 // Write the length of the encryption output stream

@@ -13,8 +13,8 @@
     <NeutralLanguage>en-NZ</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <Version>1.1.8</Version>
-    <PackageReleaseNotes>Lower memory allocation - note that this will increase encryption/decryption times for non-memory based output streams. Also now making proper use of length storage to ensure that decrypted streams do not contain false data</PackageReleaseNotes>
+    <Version>1.1.9</Version>
+    <PackageReleaseNotes>Now encrypting properly!</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
