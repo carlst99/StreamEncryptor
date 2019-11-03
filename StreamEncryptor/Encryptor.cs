@@ -146,7 +146,7 @@ namespace StreamEncryptor
                 await encryptedStream.ReadAsync(length, 0, length.Length).ConfigureAwait(false);
                 long payloadLength = BitConverter.ToInt64(length, 0);
 
-                // Read the key IV from the stream
+                // Read the key salt from the stream
                 byte[] keySalt = new byte[Configuration.SaltSize];
                 await encryptedStream.ReadAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
 
@@ -154,13 +154,16 @@ namespace StreamEncryptor
                 _encryptor.Key = EncryptionHelpers.DeriveKey(_password, keySalt, Configuration.KeySize);
 
                 // Read the IV from the stream
-                await encryptedStream.ReadAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
+                byte[] encryptorIV = new byte[_encryptor.IV.Length];
+                await encryptedStream.ReadAsync(encryptorIV, 0, encryptorIV.Length).ConfigureAwait(false);
+                _encryptor.IV = encryptorIV;
 
 #if DEBUG_DUMP
                 PrintDebugFirst256(encryptedStream, "Stream to decrypt");
                 PrintDebugFirst256(encryptedStream, "Stream after authentication, length, key removal", true);
                 PrintDebug(length, "Length");
                 PrintDebug(keySalt, "KeySalt");
+                PrintDebug(_encryptor.Key, "Encryption Key");
                 PrintDebug(_encryptor.IV, "Encryptor IV");
                 PrintDebugFirst256(encryptedStream, "Encrypted data to decrypt", true);
 #endif
@@ -172,9 +175,8 @@ namespace StreamEncryptor
                 using (CryptoStream cs = new CryptoStream(encryptedStream, _encryptor.CreateDecryptor(), CryptoStreamMode.Read))
                 {
                     byte[] buffer = new byte[Configuration.BufferSize];
-
                     int numRead;
-                    while ((numRead = await cs.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    while ((numRead = await cs.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
                     {
                         // Make sure we are not writing unnecessary bytes to the output
                         if (numRead < Configuration.BufferSize)
@@ -288,9 +290,19 @@ namespace StreamEncryptor
                 using (CryptoStream cs = new CryptoStream(outputBuffer, _encryptor.CreateEncryptor(), CryptoStreamMode.Write))
                 {
                     byte[] inputBuffer = new byte[Configuration.BufferSize];
-                    while (await toEncrypt.ReadAsync(inputBuffer, 0, inputBuffer.Length).ConfigureAwait(false) > 0)
+                    int numRead;
+                    while ((numRead = await toEncrypt.ReadAsync(inputBuffer, 0, inputBuffer.Length).ConfigureAwait(false)) > 0)
                     {
-                        await cs.WriteAsync(inputBuffer, 0, inputBuffer.Length).ConfigureAwait(false);
+                        if (numRead < Configuration.BufferSize)
+                        {
+                            byte[] finalBuffer = new byte[numRead];
+                            Array.Copy(inputBuffer, 0, finalBuffer, 0, numRead);
+                            await cs.WriteAsync(finalBuffer, 0, finalBuffer.Length).ConfigureAwait(false);
+                        } else
+                        {
+                            await cs.WriteAsync(inputBuffer, 0, inputBuffer.Length).ConfigureAwait(false);
+                        }
+
                         cs.FlushFinalBlock();
                         await outputBuffer.CopyAllToAsync(outputStream).ConfigureAwait(false);
                         outputBuffer.Position = 0;
@@ -299,8 +311,8 @@ namespace StreamEncryptor
 
                 // Write the length of the encryption output stream
                 outputStream.Position = outputStartPos + authAllocationsLength;
-                byte[] bufferLength = BitConverter.GetBytes(outputStream.Length - outputStartPos);
-                await outputStream.WriteAsync(bufferLength, 0, bufferLength.Length).ConfigureAwait(false);
+                byte[] payloadLength = BitConverter.GetBytes(toEncrypt.Length);
+                await outputStream.WriteAsync(payloadLength, 0, payloadLength.Length).ConfigureAwait(false);
 
                 #endregion
 
@@ -319,8 +331,9 @@ namespace StreamEncryptor
 
 #if DEBUG_DUMP
                 PrintDebug(toEncrypt, "Stream to encrypt", true);
-                PrintDebug(bufferLength, "Length");
+                PrintDebug(payloadLength, "Length");
                 PrintDebug(keySalt, "Key Salt");
+                PrintDebug(_encryptor.Key, "Encryption Key");
                 PrintDebug(_encryptor.IV, "Encryptor IV");
                 PrintDebug(hash, "Authenticator Hash");
                 PrintDebug(authSalt, "Authenticator Salt");
@@ -462,7 +475,7 @@ namespace StreamEncryptor
                 data = new byte[stream.Length - stream.Position];
             }
 
-            stream.Read(data);
+            stream.Read(data, 0, data.Length);
             PrintDebug(data, message);
 
             stream.Position = pos;
@@ -481,7 +494,7 @@ namespace StreamEncryptor
             if (!fromCurrentPosition)
                 stream.Position = 0;
 
-            stream.Read(data);
+            stream.Read(data, 0, data.Length);
             PrintDebug(data, message);
 
             stream.Position = pos;

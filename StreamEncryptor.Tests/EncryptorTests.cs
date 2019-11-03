@@ -1,9 +1,9 @@
-﻿using System;
+﻿using StreamEncryptor.Exceptions;
+using StreamEncryptor.Extensions;
+using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using StreamEncryptor.Exceptions;
-using StreamEncryptor.Extensions;
 using Xunit;
 
 namespace StreamEncryptor.Tests
@@ -45,7 +45,8 @@ namespace StreamEncryptor.Tests
             {
                 await Assert.ThrowsAsync<ArgumentNullException>(() => encryptor.DecryptAsync(null)).ConfigureAwait(false);
 
-                MemoryStream decryptedStream = await encryptor.DecryptAsync(await Constants.GetEncryptedStream().ConfigureAwait(false)).ConfigureAwait(false);
+                MemoryStream encryptedStream = await Constants.GetEncryptedStream().ConfigureAwait(false);
+                MemoryStream decryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
                 Assert.False(decryptedStream.IsNullOrEmpty());
             }
         }
@@ -74,12 +75,14 @@ namespace StreamEncryptor.Tests
         [Fact]
         public async void TestRoundTrip()
         {
+            MemoryStream encryptedStream;
+            using (var encryptor = GetEncryptor())
+                encryptedStream = await encryptor.EncryptAsync(Constants.GetRandomStream()).ConfigureAwait(false);
+
             using (var encryptor = GetEncryptor())
             {
-                MemoryStream encryptedStream = await encryptor.EncryptAsync(Constants.GetRandomStream()).ConfigureAwait(false);
                 encryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
-
-                Assert.Equal(Constants.RANDOM_BYTES, encryptedStream.GetBuffer().Take(Constants.RANDOM_BYTES.Length));
+                Assert.Equal(Constants.RANDOM_BYTES, GetStreamData(encryptedStream));
             }
         }
 
@@ -109,16 +112,21 @@ namespace StreamEncryptor.Tests
                 MemoryStream encryptedStream = await encryptor.EncryptAsync(fs).ConfigureAwait(false);
                 encryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
 
-                byte[] fsBuffer = new byte[fs.Length];
                 fs.Position = 0;
-                await fs.ReadAsync(fsBuffer).ConfigureAwait(false);
-                Assert.Equal(fsBuffer, encryptedStream.GetBuffer().Take((int)fs.Length));
+                Assert.Equal(GetStreamData(fs), GetStreamData(encryptedStream));
             }
         }
 
         private Encryptor<AesCryptoServiceProvider, HMACSHA256> GetEncryptor()
         {
             return new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD);
+        }
+
+        private byte[] GetStreamData(Stream stream)
+        {
+            byte[] data = new byte[stream.Length];
+            stream.Read(data);
+            return data;
         }
     }
 }
