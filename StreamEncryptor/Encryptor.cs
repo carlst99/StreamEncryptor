@@ -298,12 +298,12 @@ namespace StreamEncryptor
                             byte[] finalBuffer = new byte[numRead];
                             Array.Copy(inputBuffer, 0, finalBuffer, 0, numRead);
                             await cs.WriteAsync(finalBuffer, 0, finalBuffer.Length).ConfigureAwait(false);
+                            cs.FlushFinalBlock();
                         } else
                         {
                             await cs.WriteAsync(inputBuffer, 0, inputBuffer.Length).ConfigureAwait(false);
                         }
 
-                        cs.FlushFinalBlock();
                         await outputBuffer.CopyAllToAsync(outputStream).ConfigureAwait(false);
                         outputBuffer.Position = 0;
                     }
@@ -330,7 +330,7 @@ namespace StreamEncryptor
                 #endregion
 
 #if DEBUG_DUMP
-                PrintDebug(toEncrypt, "Stream to encrypt", true);
+                PrintDebugFirst256(toEncrypt, "Stream to encrypt");
                 PrintDebug(payloadLength, "Length");
                 PrintDebug(keySalt, "Key Salt");
                 PrintDebug(_encryptor.Key, "Encryption Key");
@@ -464,8 +464,7 @@ namespace StreamEncryptor
         private void PrintDebug(Stream stream, string message, bool printAll = false)
         {
             long pos = stream.Position;
-            byte[] data = null;
-
+            byte[] data;
             if (printAll)
             {
                 stream.Position = 0;
