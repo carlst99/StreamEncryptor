@@ -173,24 +173,7 @@ namespace StreamEncryptor
                 #region Decryption
 
                 using (CryptoStream cs = new CryptoStream(encryptedStream, _encryptor.CreateDecryptor(), CryptoStreamMode.Read))
-                {
-                    byte[] buffer = new byte[Configuration.BufferSize];
-                    int numRead;
-                    while ((numRead = await cs.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
-                    {
-                        // Make sure we are not writing unnecessary bytes to the output
-                        if (numRead < Configuration.BufferSize)
-                        {
-                            int finalLength = (int)(payloadLength - outputStream.Length);
-                            byte[] finalBuffer = new byte[finalLength];
-                            Array.Copy(buffer, 0, finalBuffer, 0, finalLength);
-                            await outputStream.WriteAsync(finalBuffer, 0, finalBuffer.Length).ConfigureAwait(false);
-                        } else
-                        {
-                            await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                        }
-                    }
-                }
+                    await cs.CopyToAsync(outputStream).ConfigureAwait(false);
 
 #if DEBUG_DUMP
                 PrintDebugFirst256(outputStream, "Decrypted data");
@@ -286,27 +269,12 @@ namespace StreamEncryptor
                 // Write the IV to the stream
                 await outputStream.WriteAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
 
-                using (MemoryStream outputBuffer = new MemoryStream(Configuration.BufferSize))
+                using (MemoryStream outputBuffer = new MemoryStream())
                 using (CryptoStream cs = new CryptoStream(outputBuffer, _encryptor.CreateEncryptor(), CryptoStreamMode.Write))
                 {
-                    byte[] inputBuffer = new byte[Configuration.BufferSize];
-                    int numRead;
-                    while ((numRead = await toEncrypt.ReadAsync(inputBuffer, 0, inputBuffer.Length).ConfigureAwait(false)) > 0)
-                    {
-                        if (numRead < Configuration.BufferSize)
-                        {
-                            byte[] finalBuffer = new byte[numRead];
-                            Array.Copy(inputBuffer, 0, finalBuffer, 0, numRead);
-                            await cs.WriteAsync(finalBuffer, 0, finalBuffer.Length).ConfigureAwait(false);
-                            cs.FlushFinalBlock();
-                        } else
-                        {
-                            await cs.WriteAsync(inputBuffer, 0, inputBuffer.Length).ConfigureAwait(false);
-                        }
-
-                        await outputBuffer.CopyAllToAsync(outputStream).ConfigureAwait(false);
-                        outputBuffer.Position = 0;
-                    }
+                    await toEncrypt.CopyToAsync(cs).ConfigureAwait(false);
+                    cs.FlushFinalBlock();
+                    outputBuffer.CopyAllTo(outputStream);
                 }
 
                 // Write the length of the encryption output stream

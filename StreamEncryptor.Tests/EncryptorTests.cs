@@ -117,6 +117,20 @@ namespace StreamEncryptor.Tests
             }
         }
 
+        [Fact]
+        public async void TestRoundTripOnLargeFile()
+        {
+            using (var encryptor = GetEncryptor())
+            using (FileStream fs = new FileStream("LargeTestFile.png", FileMode.Open, FileAccess.Read))
+            {
+                MemoryStream encryptedStream = await encryptor.EncryptAsync(fs).ConfigureAwait(false);
+                encryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
+
+                fs.Position = 0;
+                Assert.Equal(GetStreamData(fs), GetStreamData(encryptedStream));
+            }
+        }
+
         private Encryptor<AesCryptoServiceProvider, HMACSHA256> GetEncryptor()
         {
             return new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD);
