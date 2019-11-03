@@ -64,6 +64,42 @@ namespace StreamEncryptor
                 && SaltSize > 0;
         }
 
+        #region Equality Overrides
 
+        public override bool Equals(object obj)
+        {
+            return obj is EncryptorConfiguration c
+                && c.BufferSize.Equals(BufferSize)
+                && c.KeySize.Equals(KeySize)
+                && c.Mode.Equals(Mode)
+                && c.Padding.Equals(Padding)
+                && c.SaltSize.Equals(SaltSize);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = (hash * 23) + BufferSize.GetHashCode();
+                hash = (hash * 23) + KeySize.GetHashCode();
+                hash = (hash * 23) + Mode.GetHashCode();
+                hash = (hash * 23) + Padding.GetHashCode();
+                hash = (hash * 23) + SaltSize.GetHashCode();
+                return hash;
+            }
+        }
+
+        public static bool operator ==(EncryptorConfiguration left, EncryptorConfiguration right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(EncryptorConfiguration left, EncryptorConfiguration right)
+        {
+            return !(left == right);
+        }
+
+        #endregion
     }
 }
