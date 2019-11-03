@@ -102,7 +102,7 @@ namespace StreamEncryptor
                 throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
 
             T returnStream = new T();
-            await DecryptAsync(stream, returnStream);
+            await DecryptAsync(stream, returnStream).ConfigureAwait(false);
 
             returnStream.Position = 0;
             return returnStream;

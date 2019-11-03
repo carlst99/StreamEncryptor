@@ -91,15 +91,15 @@ namespace StreamEncryptor.Tests
                 Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(null));
                 Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(string.Empty));
 
-                MemoryStream ms = await Constants.GetEncryptedStream();
+                MemoryStream ms = await Constants.GetEncryptedStream().ConfigureAwait(false);
                 encryptor.SetPassword(Constants.PASSWORD.Reverse().ToString());
-                Assert.False(await encryptor.AuthenticateAsync(ms));
+                Assert.False(await encryptor.AuthenticateAsync(ms).ConfigureAwait(false));
 
                 encryptor.SetPassword(Constants.PASSWORD);
-                Assert.True(await encryptor.AuthenticateAsync(ms));
+                Assert.True(await encryptor.AuthenticateAsync(ms).ConfigureAwait(false));
             }
         }
-        
+
         [Fact]
         public async void TestRoundTripOnFile()
         {
