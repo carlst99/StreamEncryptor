@@ -12,9 +12,14 @@
     <PackageTags>encryption authentication streams</PackageTags>
     <NeutralLanguage>en-NZ</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageLicenseUrl>https://github.com/carlst99/StreamEncryptor/blob/master/LICENSE</PackageLicenseUrl>
-    <Version>1.1.4</Version>
-    <PackageReleaseNotes>Adds the SetPassword method to Encryptor</PackageReleaseNotes>
+    <PackageLicenseUrl></PackageLicenseUrl>
+    <Version>1.2.0</Version>
+    <PackageReleaseNotes>BREAKING CHANGE - Versioning tag added, and payload length removed, from encrypted stream. This will now allow migrations; hopefully no more breaking changes from this point forwards</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
   </PropertyGroup>
 
 </Project>

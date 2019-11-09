@@ -2,6 +2,9 @@
 using StreamEncryptor.Extensions;
 using StreamEncryptor.Helpers;
 using System;
+#if DEBUG_DUMP
+using System.Diagnostics;
+#endif
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -12,6 +15,20 @@ namespace StreamEncryptor
         where TAlgorithm : SymmetricAlgorithm, new()
         where TAuthenticator : HMAC, new()
     {
+        #region Constants
+
+        /// <summary>
+        /// The size, in bytes, allocated to output streams for storing the length of the payload
+        /// </summary>
+        public const int LENGTH_ALLOCATION_SIZE = sizeof(long);
+
+        /// <summary>
+        /// Gets the current algorithm version
+        /// </summary>
+        public const int ALGORITHM_VERSION = 1;
+
+        #endregion
+
         #region Fields
 
         /// <summary>
@@ -92,7 +109,7 @@ namespace StreamEncryptor
                 throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
 
             T returnStream = new T();
-            await DecryptAsync(stream, returnStream);
+            await DecryptAsync(stream, returnStream).ConfigureAwait(false);
 
             returnStream.Position = 0;
             return returnStream;
@@ -117,9 +134,9 @@ namespace StreamEncryptor
                 #region Authentication
 
                 // Authenticate the stream without peeking and get the remaining data for decryption
-                AuthenticationResult authenticationResult = await AuthenticateAsync(encryptedStream, false).ConfigureAwait(false);
+                bool authResult = await AuthenticateAsync(encryptedStream, false).ConfigureAwait(false);
 
-                if (!authenticationResult.AuthenticationSuccess)
+                if (!authResult)
                 {
                     throw new EncryptionException("Data has been modified after encryption")
                     {
@@ -129,33 +146,45 @@ namespace StreamEncryptor
 
                 #endregion
 
-                MemoryStream remainingStream = new MemoryStream(authenticationResult.Buffer);
+                #region Get length of data, IVs, Keys and hashes
 
-                #region Get IVs, Keys and hashes
+                // Read the algorithm version
+                byte[] versionBuffer = new byte[sizeof(int)];
+                await encryptedStream.ReadAsync(versionBuffer, 0, versionBuffer.Length).ConfigureAwait(false);
+                int algorithmVersion = BitConverter.ToInt32(versionBuffer, 0);
 
-                // Read the key IV from the stream
+                // Read the key salt from the stream
                 byte[] keySalt = new byte[Configuration.SaltSize];
-                await remainingStream.ReadAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
+                await encryptedStream.ReadAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
 
                 // Get the encryption key
                 _encryptor.Key = EncryptionHelpers.DeriveKey(_password, keySalt, Configuration.KeySize);
 
                 // Read the IV from the stream
-                await remainingStream.ReadAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
+                byte[] encryptorIV = new byte[_encryptor.IV.Length];
+                await encryptedStream.ReadAsync(encryptorIV, 0, encryptorIV.Length).ConfigureAwait(false);
+                _encryptor.IV = encryptorIV;
+
+#if DEBUG_DUMP
+                PrintDebugFirst256(encryptedStream, "Stream to decrypt");
+                PrintDebugFirst256(encryptedStream, "Stream after authentication, length, key removal", true);
+                PrintDebug(length, "Length");
+                PrintDebug(keySalt, "KeySalt");
+                PrintDebug(_encryptor.Key, "Encryption Key");
+                PrintDebug(_encryptor.IV, "Encryptor IV");
+                PrintDebugFirst256(encryptedStream, "Encrypted data to decrypt", true);
+#endif
 
                 #endregion
 
                 #region Decryption
 
-                using (CryptoStream cs = new CryptoStream(remainingStream, _encryptor.CreateDecryptor(), CryptoStreamMode.Read))
-                {
-                    byte[] buff = new byte[Configuration.BufferSize];
+                using (CryptoStream cs = new CryptoStream(encryptedStream, _encryptor.CreateDecryptor(), CryptoStreamMode.Read))
+                    await cs.CopyToAsync(outputStream).ConfigureAwait(false);
 
-                    while (cs.Read(buff, 0, buff.Length) > 0)
-                    {
-                        await outputStream.WriteAsync(buff, 0, buff.Length).ConfigureAwait(false);
-                    }
-                }
+#if DEBUG_DUMP
+                PrintDebugFirst256(outputStream, "Decrypted data");
+#endif
 
                 #endregion
             }
@@ -176,7 +205,6 @@ namespace StreamEncryptor
         /// Encrypts a stream
         /// </summary>
         /// <param name="stream">The stream to encrypt</param>
-        /// <returns></returns>
         public async Task<MemoryStream> EncryptAsync(Stream stream) => await EncryptAsync<MemoryStream>(stream).ConfigureAwait(false);
 
         /// <summary>
@@ -184,7 +212,6 @@ namespace StreamEncryptor
         /// </summary>
         /// <typeparam name="T">The type of stream to encrypt to</typeparam>
         /// <param name="stream">The stream to encrypt</param>
-        /// <returns></returns>
         public async Task<T> EncryptAsync<T>(Stream stream) where T : Stream, new()
         {
             CheckDisposed();
@@ -193,7 +220,7 @@ namespace StreamEncryptor
                 throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
 
             T returnStream = new T();
-            await EncryptAsync(stream, returnStream);
+            await EncryptAsync(stream, returnStream).ConfigureAwait(false);
 
             returnStream.Position = 0;
             return returnStream;
@@ -210,6 +237,8 @@ namespace StreamEncryptor
 
             if (toEncrypt.IsNullOrEmpty())
                 throw new ArgumentNullException(nameof(toEncrypt), "Stream cannot be null or empty");
+            if (toEncrypt.Position == toEncrypt.Length)
+                throw new ArgumentException("Input stream is at end", nameof(toEncrypt));
             if (outputStream == null)
                 throw new ArgumentNullException(nameof(toEncrypt));
 
@@ -234,35 +263,36 @@ namespace StreamEncryptor
 
                 #region Encryption
 
-                MemoryStream ms = new MemoryStream(); // Encrypted stream
-                CryptoStream cs = new CryptoStream(ms, _encryptor.CreateEncryptor(), CryptoStreamMode.Write); // Encryptor stream
+                long outputStartPos = outputStream.Position;
+                int authAllocationsLength = (_authenticator.HashSize / 8) + Configuration.SaltSize;
+
+                // Allocate space for the authentication hash, auth salt and payload length
+                // Also write algorithm version
+                await outputStream.WriteAsync(new byte[_authenticator.HashSize / 8], 0, _authenticator.HashSize / 8).ConfigureAwait(false);
+                await outputStream.WriteAsync(new byte[Configuration.SaltSize], 0, Configuration.SaltSize).ConfigureAwait(false);
+                await outputStream.WriteAsync(BitConverter.GetBytes(ALGORITHM_VERSION), 0, sizeof(int)).ConfigureAwait(false);
 
                 // Write the key salt to the stream
-                await ms.WriteAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
+                await outputStream.WriteAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
                 // Write the IV to the stream
-                await ms.WriteAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
+                await outputStream.WriteAsync(_encryptor.IV, 0, _encryptor.IV.Length).ConfigureAwait(false);
 
-                byte[] streamBuffer = new byte[Configuration.BufferSize];
-                while (toEncrypt.Read(streamBuffer, 0, streamBuffer.Length) > 0)
+                using (MemoryStream outputBuffer = new MemoryStream())
+                using (CryptoStream cs = new CryptoStream(outputBuffer, _encryptor.CreateEncryptor(), CryptoStreamMode.Write))
                 {
-                    await cs.WriteAsync(streamBuffer, 0, streamBuffer.Length).ConfigureAwait(false);
+                    await toEncrypt.CopyToAsync(cs).ConfigureAwait(false);
+                    cs.FlushFinalBlock();
+                    await outputBuffer.CopyAllToAsync(outputStream).ConfigureAwait(false);
                 }
-
-                // Flush buffers
-                await cs.FlushAsync().ConfigureAwait(false);
-                cs.FlushFinalBlock();
 
                 #endregion
 
                 #region Authentication
 
-                // Get the buffer of ms
-                byte[] buffer = new byte[ms.Length];
-                ms.Position = 0;
-                await ms.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-
                 // Get the hash and write it to the stream
-                byte[] hash = _authenticator.ComputeHash(buffer);
+                outputStream.Position = outputStartPos + authAllocationsLength;
+                byte[] hash = _authenticator.ComputeHash(outputStream);
+                outputStream.Position = outputStartPos;
                 await outputStream.WriteAsync(hash, 0, hash.Length).ConfigureAwait(false);
 
                 // Write the auth salt to the stream
@@ -270,14 +300,17 @@ namespace StreamEncryptor
 
                 #endregion
 
-                #region FinaliseReturn
+#if DEBUG_DUMP
+                PrintDebugFirst256(toEncrypt, "Stream to encrypt");
+                PrintDebug(payloadLength, "Length");
+                PrintDebug(keySalt, "Key Salt");
+                PrintDebug(_encryptor.Key, "Encryption Key");
+                PrintDebug(_encryptor.IV, "Encryptor IV");
+                PrintDebug(hash, "Authenticator Hash");
+                PrintDebug(authSalt, "Authenticator Salt");
+                PrintDebugFirst256(outputStream, "Encrypted output stream");
+#endif
 
-                await outputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-
-                // Dispose of sw and underlying streams
-                cs.Dispose();
-
-                #endregion
             }
             catch (Exception ex)
             {
@@ -298,8 +331,7 @@ namespace StreamEncryptor
         /// <typeparam name="T">The type of stream</typeparam>
         /// <param name="stream">An encrypted stream</param>
         /// <param name="peek">Whether or not to seek through the stream when authenticating</param>
-        /// <returns></returns>
-        internal async Task<AuthenticationResult> AuthenticateAsync<T>(T stream, bool peek) where T : Stream
+        internal async Task<bool> AuthenticateAsync<T>(T stream, bool peek) where T : Stream
         {
             CheckDisposed();
 
@@ -307,6 +339,7 @@ namespace StreamEncryptor
                 throw new ArgumentNullException(nameof(stream), "Stream cannot be null or empty");
 
             long position = stream.Position;
+            int authFieldsLength = (_authenticator.HashSize / 8) + Configuration.SaltSize;
 
             // Get the hash and auth salt from the stream
             byte[] hash = new byte[_authenticator.HashSize / 8];
@@ -318,28 +351,28 @@ namespace StreamEncryptor
             // Get the auth key
             _authenticator.Key = EncryptionHelpers.DeriveKey(_password, authSalt, _authenticator.Key.Length);
 
-            // Get the buffer to authenticate
-            byte[] buffer = new byte[stream.Length - stream.Position];
-            await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-
             // Compute and check the hash
-            byte[] computedHash = _authenticator.ComputeHash(buffer);
+            byte[] computedHash = _authenticator.ComputeHash(stream);
             bool isValid = true;
 
             for (int i = 0; i < hash.Length; i++)
             {
                 if (hash[i] != computedHash[i])
+                {
                     isValid = false;
+                    break;
+                }
             }
 
             if (peek)
             {
                 stream.Position = position;
-                return new AuthenticationResult(isValid, null);
+                return isValid;
             }
             else
             {
-                return new AuthenticationResult(isValid, buffer);
+                stream.Position = position + authFieldsLength;
+                return isValid;
             }
         }
 
@@ -348,12 +381,7 @@ namespace StreamEncryptor
         /// </summary>
         /// <typeparam name="T">The type of stream</typeparam>
         /// <param name="stream">An encrypted stream</param>
-        /// <returns></returns>
-        public async Task<bool> AuthenticateAsync<T>(T stream) where T : Stream
-        {
-            AuthenticationResult result = await AuthenticateAsync(stream, true).ConfigureAwait(false);
-            return result.AuthenticationSuccess;
-        }
+        public async Task<bool> AuthenticateAsync<T>(T stream) where T : Stream => await AuthenticateAsync(stream, true).ConfigureAwait(false);
 
         #endregion
 
@@ -379,6 +407,72 @@ namespace StreamEncryptor
             _encryptor.Padding = Configuration.Padding;
             _encryptor.KeySize = Configuration.GetKeySizeInBits();
         }
+
+        #region Debug printing
+
+#if DEBUG_DUMP
+
+        /// <summary>
+        /// Prints a byte array to the debug console
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="message"></param>
+        private void PrintDebug(byte[] data, string message)
+        {
+            Debug.WriteLine(message);
+            foreach (byte element in data)
+                Debug.Write(element.ToString());
+            Debug.WriteLine(string.Empty);
+            Debug.WriteLine("============");
+        }
+
+        /// <summary>
+        /// Prints a stream to the debug console
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="message"></param>
+        /// <param name="printAll">A value indicating whether the stream should be printed from its beginning or its current position</param>
+        private void PrintDebug(Stream stream, string message, bool printAll = false)
+        {
+            long pos = stream.Position;
+            byte[] data;
+            if (printAll)
+            {
+                stream.Position = 0;
+                data = new byte[stream.Length];
+            } else
+            {
+                data = new byte[stream.Length - stream.Position];
+            }
+
+            stream.Read(data, 0, data.Length);
+            PrintDebug(data, message);
+
+            stream.Position = pos;
+        }
+
+        /// <summary>
+        /// Prints the first 256 bytes of a stream to the debug console
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="message"></param>
+        private void PrintDebugFirst256(Stream stream, string message, bool fromCurrentPosition = false)
+        {
+            long pos = stream.Position;
+            byte[] data = new byte[256];
+
+            if (!fromCurrentPosition)
+                stream.Position = 0;
+
+            stream.Read(data, 0, data.Length);
+            PrintDebug(data, message);
+
+            stream.Position = pos;
+        }
+
+#endif
+
+        #endregion
 
         #region IDisposable Support
 

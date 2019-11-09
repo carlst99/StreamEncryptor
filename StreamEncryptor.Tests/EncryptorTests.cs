@@ -1,9 +1,9 @@
-﻿using System;
+﻿using StreamEncryptor.Exceptions;
+using StreamEncryptor.Extensions;
+using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using StreamEncryptor.Exceptions;
-using StreamEncryptor.Extensions;
 using Xunit;
 
 namespace StreamEncryptor.Tests
@@ -20,6 +20,10 @@ namespace StreamEncryptor.Tests
             EncryptorConfiguration config = new EncryptorConfiguration(CipherMode.CBC, PaddingMode.None, 32, 16, 256);
             using (var encryptor = new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD, config))
                 Assert.Equal(config, encryptor.Configuration);
+
+            // Testing invalid configuration
+            config = new EncryptorConfiguration(CipherMode.CBC, PaddingMode.None, -1, -1, -1);
+            Assert.Throws<InvalidOperationException>(() => new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD, config));
         }
 
         [Fact]
@@ -43,9 +47,10 @@ namespace StreamEncryptor.Tests
         {
             using (var encryptor = GetEncryptor())
             {
-                await Assert.ThrowsAsync<ArgumentNullException>(() => encryptor.EncryptAsync(null)).ConfigureAwait(false);
+                await Assert.ThrowsAsync<ArgumentNullException>(() => encryptor.DecryptAsync(null)).ConfigureAwait(false);
 
-                MemoryStream decryptedStream = await encryptor.DecryptAsync(await Constants.GetEncryptedStream().ConfigureAwait(false)).ConfigureAwait(false);
+                MemoryStream encryptedStream = await Constants.GetEncryptedStream().ConfigureAwait(false);
+                MemoryStream decryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
                 Assert.False(decryptedStream.IsNullOrEmpty());
             }
         }
@@ -74,12 +79,14 @@ namespace StreamEncryptor.Tests
         [Fact]
         public async void TestRoundTrip()
         {
+            MemoryStream encryptedStream;
+            using (var encryptor = GetEncryptor())
+                encryptedStream = await encryptor.EncryptAsync(Constants.GetRandomStream()).ConfigureAwait(false);
+
             using (var encryptor = GetEncryptor())
             {
-                MemoryStream encryptedStream = await encryptor.EncryptAsync(Constants.GetRandomStream()).ConfigureAwait(false);
                 encryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
-
-                Assert.Equal(Constants.RANDOM_BYTES, encryptedStream.GetBuffer().Take(Constants.RANDOM_BYTES.Length));
+                Assert.Equal(Constants.RANDOM_BYTES, GetStreamData(encryptedStream));
             }
         }
 
@@ -91,18 +98,53 @@ namespace StreamEncryptor.Tests
                 Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(null));
                 Assert.Throws<ArgumentNullException>(() => encryptor.SetPassword(string.Empty));
 
-                MemoryStream ms = await Constants.GetEncryptedStream();
+                MemoryStream ms = await Constants.GetEncryptedStream().ConfigureAwait(false);
                 encryptor.SetPassword(Constants.PASSWORD.Reverse().ToString());
-                Assert.False(await encryptor.AuthenticateAsync(ms));
+                Assert.False(await encryptor.AuthenticateAsync(ms).ConfigureAwait(false));
 
                 encryptor.SetPassword(Constants.PASSWORD);
-                Assert.True(await encryptor.AuthenticateAsync(ms));
+                Assert.True(await encryptor.AuthenticateAsync(ms).ConfigureAwait(false));
+            }
+        }
+
+        [Fact]
+        public async void TestRoundTripOnFile()
+        {
+            using (var encryptor = GetEncryptor())
+            using (FileStream fs = new FileStream("TestFile.png", FileMode.Open, FileAccess.Read))
+            {
+                MemoryStream encryptedStream = await encryptor.EncryptAsync(fs).ConfigureAwait(false);
+                encryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
+
+                fs.Position = 0;
+                Assert.Equal(GetStreamData(fs), GetStreamData(encryptedStream));
+            }
+        }
+
+        [Fact]
+        public async void TestRoundTripOnLargeFile()
+        {
+            using (var encryptor = GetEncryptor())
+            using (FileStream fs = new FileStream("LargeTestFile.png", FileMode.Open, FileAccess.Read))
+            {
+                MemoryStream encryptedStream = await encryptor.EncryptAsync(fs).ConfigureAwait(false);
+                encryptedStream = await encryptor.DecryptAsync(encryptedStream).ConfigureAwait(false);
+
+                fs.Position = 0;
+                Assert.Equal(GetStreamData(fs), GetStreamData(encryptedStream));
             }
         }
 
         private Encryptor<AesCryptoServiceProvider, HMACSHA256> GetEncryptor()
         {
             return new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD);
+        }
+
+        private byte[] GetStreamData(Stream stream)
+        {
+            byte[] data = new byte[stream.Length];
+            stream.Read(data);
+            return data;
         }
     }
 }

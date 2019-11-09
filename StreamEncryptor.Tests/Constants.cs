@@ -16,9 +16,7 @@ namespace StreamEncryptor.Tests
         public static async Task<MemoryStream> GetEncryptedStream<TAlgorithm, TAuthenticator>() where TAlgorithm : SymmetricAlgorithm, new() where TAuthenticator : HMAC, new()
         {
             using (Encryptor<TAlgorithm, TAuthenticator> encryptor = new Encryptor<TAlgorithm, TAuthenticator>(PASSWORD))
-            {
                 return await encryptor.EncryptAsync(GetRandomStream()).ConfigureAwait(false);
-            }
         }
 
         public static async Task<MemoryStream> GetEncryptedStream()
