@@ -13,8 +13,8 @@
     <NeutralLanguage>en-NZ</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl></PackageLicenseUrl>
-    <Version>1.1.9</Version>
-    <PackageReleaseNotes>Now encrypting properly!</PackageReleaseNotes>
+    <Version>1.2.0</Version>
+    <PackageReleaseNotes>BREAKING CHANGE - Versioning tag added, and payload length removed, from encrypted stream. This will now allow migrations; hopefully no more breaking changes from this point forwards</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
