@@ -153,11 +153,6 @@ namespace StreamEncryptor
                 await encryptedStream.ReadAsync(versionBuffer, 0, versionBuffer.Length).ConfigureAwait(false);
                 int algorithmVersion = BitConverter.ToInt32(versionBuffer, 0);
 
-                // Read the length of the data
-                byte[] length = new byte[LENGTH_ALLOCATION_SIZE];
-                await encryptedStream.ReadAsync(length, 0, length.Length).ConfigureAwait(false);
-                long payloadLength = BitConverter.ToInt64(length, 0);
-
                 // Read the key salt from the stream
                 byte[] keySalt = new byte[Configuration.SaltSize];
                 await encryptedStream.ReadAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
@@ -276,7 +271,6 @@ namespace StreamEncryptor
                 await outputStream.WriteAsync(new byte[_authenticator.HashSize / 8], 0, _authenticator.HashSize / 8).ConfigureAwait(false);
                 await outputStream.WriteAsync(new byte[Configuration.SaltSize], 0, Configuration.SaltSize).ConfigureAwait(false);
                 await outputStream.WriteAsync(BitConverter.GetBytes(ALGORITHM_VERSION), 0, sizeof(int)).ConfigureAwait(false);
-                await outputStream.WriteAsync(new byte[LENGTH_ALLOCATION_SIZE], 0, LENGTH_ALLOCATION_SIZE).ConfigureAwait(false);
 
                 // Write the key salt to the stream
                 await outputStream.WriteAsync(keySalt, 0, keySalt.Length).ConfigureAwait(false);
@@ -290,11 +284,6 @@ namespace StreamEncryptor
                     cs.FlushFinalBlock();
                     await outputBuffer.CopyAllToAsync(outputStream).ConfigureAwait(false);
                 }
-
-                // Write the length of the encryption output stream
-                outputStream.Position = outputStartPos + authAllocationsLength;
-                byte[] payloadLength = BitConverter.GetBytes(toEncrypt.Length);
-                await outputStream.WriteAsync(payloadLength, 0, payloadLength.Length).ConfigureAwait(false);
 
                 #endregion
 
