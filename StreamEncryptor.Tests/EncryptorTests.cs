@@ -20,6 +20,10 @@ namespace StreamEncryptor.Tests
             EncryptorConfiguration config = new EncryptorConfiguration(CipherMode.CBC, PaddingMode.None, 32, 16, 256);
             using (var encryptor = new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD, config))
                 Assert.Equal(config, encryptor.Configuration);
+
+            // Testing invalid configuration
+            config = new EncryptorConfiguration(CipherMode.CBC, PaddingMode.None, -1, -1, -1);
+            Assert.Throws<InvalidOperationException>(() => new Encryptor<AesCryptoServiceProvider, HMACSHA256>(Constants.PASSWORD, config));
         }
 
         [Fact]
