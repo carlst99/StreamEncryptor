@@ -2,7 +2,9 @@
 using StreamEncryptor.Extensions;
 using StreamEncryptor.Helpers;
 using System;
+#if DEBUG_DUMP
 using System.Diagnostics;
+#endif
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
