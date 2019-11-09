@@ -22,6 +22,11 @@ namespace StreamEncryptor
         /// </summary>
         public const int LENGTH_ALLOCATION_SIZE = sizeof(long);
 
+        /// <summary>
+        /// Gets the current algorithm version
+        /// </summary>
+        public const int ALGORITHM_VERSION = 1;
+
         #endregion
 
         #region Fields
