@@ -148,6 +148,11 @@ namespace StreamEncryptor
 
                 #region Get length of data, IVs, Keys and hashes
 
+                // Read the algorithm version
+                byte[] versionBuffer = new byte[sizeof(int)];
+                await encryptedStream.ReadAsync(versionBuffer, 0, versionBuffer.Length).ConfigureAwait(false);
+                int algorithmVersion = BitConverter.ToInt32(versionBuffer, 0);
+
                 // Read the length of the data
                 byte[] length = new byte[LENGTH_ALLOCATION_SIZE];
                 await encryptedStream.ReadAsync(length, 0, length.Length).ConfigureAwait(false);
@@ -267,8 +272,10 @@ namespace StreamEncryptor
                 int authAllocationsLength = (_authenticator.HashSize / 8) + Configuration.SaltSize;
 
                 // Allocate space for the authentication hash, auth salt and payload length
+                // Also write algorithm version
                 await outputStream.WriteAsync(new byte[_authenticator.HashSize / 8], 0, _authenticator.HashSize / 8).ConfigureAwait(false);
                 await outputStream.WriteAsync(new byte[Configuration.SaltSize], 0, Configuration.SaltSize).ConfigureAwait(false);
+                await outputStream.WriteAsync(BitConverter.GetBytes(ALGORITHM_VERSION), 0, sizeof(int)).ConfigureAwait(false);
                 await outputStream.WriteAsync(new byte[LENGTH_ALLOCATION_SIZE], 0, LENGTH_ALLOCATION_SIZE).ConfigureAwait(false);
 
                 // Write the key salt to the stream
